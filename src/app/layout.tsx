@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import TTHovesFont from '@/fonts/fontsSetup';
 
+import SideNav from '@/ui/SideNav/SideNav';
+
 // needs to be remade
 export const metadata: Metadata = {
   title: 'Create Next App',
@@ -15,7 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={TTHovesFont.variable}>
-      <body className="font-tthoves">{children}</body>
+      <body>
+        <SideNav />
+        {children}
+      </body>
     </html>
   );
 }

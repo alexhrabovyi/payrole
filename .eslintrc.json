@@ -13,6 +13,13 @@
     "React": true
   },
   "rules": {
+    "default-case": "off",
+    "react/prop-types": "off",
+    "react/function-component-definition": "off",
+    "linebreak-style": [
+      "error",
+      "windows"
+    ],
     "import/extensions": [
       "error",
       "ignorePackages",
@@ -50,5 +57,9 @@
         ]
       }
     }
-  }
+  },
+  "ignorePatterns": [
+    ".next",
+    "node_modules"
+  ]
 }
