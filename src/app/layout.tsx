@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import TTHovesFont from '@/fonts/fontsSetup';
 
-import SideNav from '@/ui/SideNav/SideNav';
+import LayoutContainer from '@/ui/LayoutContainer/LayoutContainer';
 
 // needs to be remade
 export const metadata: Metadata = {
@@ -18,8 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={TTHovesFont.variable}>
       <body>
-        <SideNav />
-        {children}
+        <LayoutContainer>
+          {children}
+        </LayoutContainer>
       </body>
     </html>
   );

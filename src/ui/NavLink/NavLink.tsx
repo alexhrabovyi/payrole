@@ -11,6 +11,7 @@ import InvoicesLogo from './imgs/invoices.svg';
 import TransactionsLogo from './imgs/transactions.svg';
 import InsuranceLogo from './imgs/insurance.svg';
 import CardsLogo from './imgs/cards.svg';
+import SettingsLogo from './imgs/settings.svg';
 
 interface NavLinkProps {
   text: string,
@@ -49,6 +50,9 @@ const NavLink: React.FC<NavLinkProps> = ({ text, href }) => {
     case 'Cards':
       Logo = CardsLogo;
       break;
+    case 'Settings':
+      Logo = SettingsLogo;
+      break;
     default:
       Logo = HomeLogo;
   }
@@ -60,8 +64,9 @@ const NavLink: React.FC<NavLinkProps> = ({ text, href }) => {
           `group w-full p-[12px] flex justify-start items-center gap-[12px] font-tthoves 
           text-[16px] font-medium active:text-blue-active transition-standart
           border-solid rounded-[12px] border-[1px]`,
-          path === href ? 'text-blue hover:text-blue-hover bg-grey-50 border-grey-200'
-            : 'text-grey-400 hover:text-blue border-transparent',
+          path === href && text !== 'Settings' && 'text-blue hover:text-blue-hover bg-grey-50 border-grey-200',
+          path === href && text === 'Settings' && 'text-blue hover:text-blue-hover border-transparent',
+          path !== href && 'text-grey-400 hover:text-blue border-transparent',
         )
       }
       href={href}

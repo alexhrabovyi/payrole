@@ -6,7 +6,9 @@ import Logo from './imgs/logo.svg';
 
 export default function SideNav() {
   return (
-    <nav className="fixed top-0 left-0 block w-[280px] h-full border-solid border-r-[1px] border-grey-200 px-[25px] py-[32px]">
+    <nav className="fixed top-0 left-0 w-[280px] h-full border-solid border-r-[1px] border-grey-200 px-[25px] py-[32px]
+      flex flex-col justify-between items-stretch"
+    >
       <div className="flex flex-col justify-between items-start gap-[56px]">
         <Link
           className="group px-[7px]"
@@ -25,6 +27,7 @@ export default function SideNav() {
           <NavLink text="Cards" href={links.cards} />
         </div>
       </div>
+      <NavLink text="Settings" href={links.settings} />
     </nav>
   );
 }

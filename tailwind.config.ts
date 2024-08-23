@@ -17,7 +17,11 @@ const config: Config = {
         hover: '#3476e1',
         active: '#2960ba',
       },
-      white: '#FFFFFF',
+      white: {
+        DEFAULT: '#FFFFFF',
+        hover: '#f0eeee',
+        active: '#ebebeb',
+      },
       lightBlue: {
         DEFAULT: '#F5F9FF',
         98: '#F5F9FF',
