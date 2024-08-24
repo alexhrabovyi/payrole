@@ -15,7 +15,7 @@ export default function SideNav() {
           href={links.dashboard}
           aria-label="Payrole Dashboard"
         >
-          <Logo className="w-[113px] h-[32px] fill-darkBlue group-hover:fill-blue group-active:fill-blue-active transition-standart" />
+          <Logo className="w-[113px] h-auto fill-darkBlue group-hover:fill-blue group-active:fill-blue-active transition-standart" />
         </Link>
         <div className="w-full flex flex-col justify-start items-stretch gap-[16px]">
           <NavLink text="Home" href={links.dashboard} />

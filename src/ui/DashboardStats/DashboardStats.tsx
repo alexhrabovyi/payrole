@@ -1,14 +1,40 @@
 import CollectedIcon from './imgs/collected.svg';
 import PaidIcon from './imgs/paid.svg';
+import PendingIcon from './imgs/pending.svg';
+import PendingSumIcon from './imgs/pending_sum.svg';
 
-export default function CollectedPaidStats() {
+interface StatsProps {
+  type: 'total' | 'pending',
+}
+
+const DashboardStats: React.FC<StatsProps> = ({ type }) => {
+  let FirstIcon;
+  let SecondIcon;
+
+  let firstTitle: string;
+  let secondTitle: string;
+
+  if (type === 'total') {
+    FirstIcon = CollectedIcon;
+    SecondIcon = PaidIcon;
+
+    firstTitle = 'Collected';
+    secondTitle = 'Paid';
+  } else {
+    FirstIcon = PendingIcon;
+    SecondIcon = PendingSumIcon;
+
+    firstTitle = 'Pending';
+    secondTitle = 'Penging Sum';
+  }
+
   return (
     <div className="w-full grid grid-cols-[1fr_1px_1fr] gap-[40px] p-[24px] border-[1px] border-solid border-grey-200 rounded-[16px]">
       <div className="flex justify-start items-start gap-[16px]">
-        <CollectedIcon className="w-[24px] h-[24px]" />
+        <FirstIcon className="w-[24px] h-auto" />
         <div className="flex flex-col justify-start items-start gap-[14px]">
           <p className="font-tthoves text-grey-500 font-medium text-[16px]">
-            Collected
+            {firstTitle}
           </p>
           <p className="font-tthoves text-darkBlue text-[32px] font-medium">
             $58,764
@@ -20,10 +46,10 @@ export default function CollectedPaidStats() {
       </div>
       <span className="block w-full h-full bg-grey-100" />
       <div className="flex justify-start items-start gap-[16px]">
-        <PaidIcon className="w-[24px] h-[24px]" />
+        <SecondIcon className="w-[24px] h-auto" />
         <div className="flex flex-col justify-start items-start gap-[14px]">
           <p className="font-tthoves text-grey-500 font-medium text-[16px]">
-            Paid
+            {secondTitle}
           </p>
           <p className="font-tthoves text-darkBlue text-[32px] font-medium">
             $58,764
@@ -35,4 +61,6 @@ export default function CollectedPaidStats() {
       </div>
     </div>
   );
-}
+};
+
+export default DashboardStats;

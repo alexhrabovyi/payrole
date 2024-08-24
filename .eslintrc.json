@@ -13,6 +13,8 @@
     "React": true
   },
   "rules": {
+    "react/button-has-type": "off",
+    "no-undef": "off",
     "default-case": "off",
     "react/prop-types": "off",
     "react/function-component-definition": "off",
