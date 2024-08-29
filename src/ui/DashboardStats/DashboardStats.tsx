@@ -25,7 +25,7 @@ const DashboardStats: React.FC<StatsProps> = ({ type }) => {
     SecondIcon = PendingSumIcon;
 
     firstTitle = 'Pending';
-    secondTitle = 'Penging Sum';
+    secondTitle = 'Pending Sum';
   }
 
   return (
