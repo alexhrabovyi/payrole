@@ -7,7 +7,7 @@ import avatarSrc from './imgs/avatar.png';
 export default function TransactionHistory() {
   return (
     <div className="w-full h-full p-[24px] flex flex-col justify-start
-      items-stretch gap-[24px] border-[1px] border-solid border-grey-200 rounded-[16px]"
+      items-stretch gap-[24px] border-grey"
     >
       <div className="w-full flex justify-between items-center">
         <h3 className="font-tthoves font-medium text-[20px] text-darkBlue">

@@ -29,7 +29,7 @@ const DashboardStats: React.FC<StatsProps> = ({ type }) => {
   }
 
   return (
-    <div className="w-full grid grid-cols-[1fr_1px_1fr] gap-[40px] p-[24px] border-[1px] border-solid border-grey-200 rounded-[16px]">
+    <div className="w-full grid grid-cols-[1fr_1px_1fr] gap-[40px] p-[24px] border-grey">
       <div className="flex justify-start items-start gap-[16px]">
         <FirstIcon className="w-[24px] h-auto" />
         <div className="flex flex-col justify-start items-start gap-[14px]">

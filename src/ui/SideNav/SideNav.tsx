@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import links from '@/libs/links';
-import NavLink from '../NavLink/NavLink';
+import NavLink from '@/ui/SideNav/NavLink/NavLink';
 import Logo from './imgs/logo.svg';
 
 export default function SideNav() {

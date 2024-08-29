@@ -6,4 +6,8 @@
   .transition-standart {
     @apply transition-all duration-150 ease-in-out 
   }
+
+  .border-grey {
+    @apply border-[1px] border-solid border-grey-200 rounded-[16px]
+  }
 }
