@@ -163,12 +163,18 @@ export default function PaymentHistory() {
 
     if (!canvas) return;
 
+    const canvasWidth = canvas.offsetWidth;
+    const canvasHeight = canvas.offsetHeight;
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
     let enhancedPaymentStatsObjs;
 
     function divideDate(dateStr: string) {
       const splittedDate = dateStr.split('-');
 
-      const day = splittedDate[1];
+      const day = Number(splittedDate[1]);
       const month = MONTHS[Number(splittedDate[0])];
       const year = splittedDate[2];
 
@@ -178,9 +184,6 @@ export default function PaymentHistory() {
         year,
       };
     }
-
-    const canvasWidth = canvas.offsetWidth;
-    const canvasHeight = canvas.offsetHeight;
 
     const daysAmount = allAmounts.length;
     const XStep = Number((canvasWidth / (daysAmount - 1)).toFixed(5));
@@ -204,10 +207,42 @@ export default function PaymentHistory() {
       return {
         amount: p.amount,
         ...dividedDate,
-        x: calcXCoord(Number(dividedDate.day)),
+        x: calcXCoord(dividedDate.day),
         y: calcYCoord(Number(p.amount)),
       };
     });
+
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#0AAF60';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    const lineargradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+    lineargradient.addColorStop(0, 'rgba(48, 197, 89, 0.7)');
+    lineargradient.addColorStop(1, 'rgba(48, 197, 89, 0)');
+    ctx.fillStyle = lineargradient;
+
+    const firstStatX = enhancedPaymentStatsObjs[0].x;
+    const firstStatY = enhancedPaymentStatsObjs[0].y;
+    ctx.moveTo(firstStatX, firstStatY);
+
+    for (let i = 1; i < enhancedPaymentStatsObjs.length; i += 1) {
+      const statObj = enhancedPaymentStatsObjs[i];
+
+      ctx.lineTo(statObj.x, statObj.y);
+    }
+
+    ctx.stroke();
+
+    ctx.lineTo(canvasWidth, canvasHeight);
+    ctx.lineTo(0, canvasHeight);
+
+    ctx.globalAlpha = 0.2;
+    ctx.fill();
 
     console.log(enhancedPaymentStatsObjs);
 
