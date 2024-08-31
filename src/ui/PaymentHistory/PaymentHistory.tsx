@@ -1,12 +1,32 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import {
+  ReactNode, useCallback, useEffect, useRef, useState,
+} from 'react';
 import clsx from 'clsx';
 
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 
-const paymentStats = [
+interface PaymentStats {
+  date: string,
+  amount: string,
+}
+
+interface AdjustedPaymentStats {
+  amount: number,
+  day: number,
+  month: string,
+  year: number,
+}
+
+interface PaymentStatsWithCoords extends AdjustedPaymentStats {
+  x: number,
+  y: number,
+}
+
+// 31 day of the same month. Only positive numbers;
+const paymentStats: PaymentStats[] = [
   {
     date: '12-01-2023',
     amount: '3232',
@@ -133,6 +153,54 @@ const paymentStats = [
   },
 ];
 
+// 5 days of the same month. Only positive numbers;
+const paymentStats1: PaymentStats[] = [
+  {
+    date: '12-03-2023',
+    amount: '2071',
+  },
+  {
+    date: '12-11-2023',
+    amount: '1325',
+  },
+  {
+    date: '12-15-2023',
+    amount: '3561',
+  },
+  {
+    date: '12-16-2023',
+    amount: '2323',
+  },
+  {
+    date: '12-28-2023',
+    amount: '1531',
+  },
+];
+
+// 5 days of the same month. One negative number;
+const paymentStats2: PaymentStats[] = [
+  {
+    date: '12-03-2023',
+    amount: '2071',
+  },
+  {
+    date: '12-14-2023',
+    amount: '2561',
+  },
+  {
+    date: '12-15-2023',
+    amount: '-1432',
+  },
+  {
+    date: '12-16-2023',
+    amount: '2323',
+  },
+  {
+    date: '12-28-2023',
+    amount: '1531',
+  },
+];
+
 // it can be remade as enum
 const MONTHS: Record<number, string> = {
   1: 'January',
@@ -154,14 +222,99 @@ export default function PaymentHistory() {
   const svgRef = useRef<null | SVGSVGElement>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
-  const [dStrokeAttribute, setDStrokeAttribute] = useState('');
-  const [dFillAttribute, setDFillAttribute] = useState('');
+  const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
 
-  const allAmounts = paymentStats.map((p) => Number(p.amount));
-  const minAmount = Math.min(...allAmounts);
-  const maxAmount = Math.max(...allAmounts);
+  const adjustPaymentStats = useCallback((statsObj: PaymentStats[]) => {
+    function divideDate(dateStr: string) {
+      const splittedDate = dateStr.split('-');
 
-  useEffect(() => {
+      const day = Number(splittedDate[1]);
+      const month = MONTHS[Number(splittedDate[0])];
+      const year = Number(splittedDate[2]);
+
+      return {
+        day,
+        month,
+        year,
+      };
+    }
+
+    function fillWithPaymentStats(
+      resultingStatsObj: AdjustedPaymentStats[],
+      startDate: number,
+      endDate: number,
+      month: string,
+      year: number,
+    ) {
+      for (let i = startDate; i < endDate; i += 1) {
+        resultingStatsObj.push({
+          amount: 0,
+          day: i,
+          month,
+          year,
+        });
+      }
+    }
+
+    const adjustedPaymentStatsObj: AdjustedPaymentStats[] = [];
+
+    const firstAdjustedStatsDate = divideDate(statsObj[0].date);
+
+    if (firstAdjustedStatsDate.day !== 1) {
+      fillWithPaymentStats(
+        adjustedPaymentStatsObj,
+        1,
+        firstAdjustedStatsDate.day,
+        firstAdjustedStatsDate.month,
+        firstAdjustedStatsDate.year,
+      );
+    }
+
+    statsObj.forEach((obj, i) => {
+      const currentObjAdjustedDate = divideDate(obj.date);
+
+      adjustedPaymentStatsObj.push({
+        amount: Number(obj.amount),
+        ...currentObjAdjustedDate,
+      });
+
+      const nextObj = statsObj[i + 1];
+
+      if (!nextObj) {
+        if (currentObjAdjustedDate.day !== 31) {
+          fillWithPaymentStats(
+            adjustedPaymentStatsObj,
+            currentObjAdjustedDate.day + 1,
+            32,
+            firstAdjustedStatsDate.month,
+            firstAdjustedStatsDate.year,
+          );
+        }
+
+        return;
+      }
+
+      const nextObjAdjustedDate = divideDate(nextObj.date);
+      const currentObjDay = currentObjAdjustedDate.day;
+      const nextObjDay = nextObjAdjustedDate.day;
+
+      const daysDiff = nextObjDay - currentObjDay;
+
+      if (daysDiff !== 1) {
+        fillWithPaymentStats(
+          adjustedPaymentStatsObj,
+          currentObjDay + 1,
+          nextObjDay,
+          firstAdjustedStatsDate.month,
+          firstAdjustedStatsDate.year,
+        );
+      }
+    });
+
+    return adjustedPaymentStatsObj;
+  }, []);
+
+  const paintGraph = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
     const svgEl = svgRef.current;
 
@@ -174,73 +327,159 @@ export default function PaymentHistory() {
     svgEl.setAttribute('width', String(svgWidth));
     svgEl.setAttribute('height', String(svgHeight));
 
-    function divideDate(dateStr: string) {
-      const splittedDate = dateStr.split('-');
+    const adjustedPaymentStatsObj = adjustPaymentStats(paymentStats1);
+    const paths: ReactNode[] = [];
 
-      const day = Number(splittedDate[1]);
-      const month = MONTHS[Number(splittedDate[0])];
-      const year = splittedDate[2];
+    // needs to be deleted
+    let zeroLinePath: ReactNode;
 
-      return {
-        day,
-        month,
-        year,
-      };
-    }
+    const allAmounts = adjustedPaymentStatsObj.map((p) => p.amount);
+    const minAmount = Math.min(...allAmounts);
+    const maxAmount = Math.max(...allAmounts);
 
-    const daysAmount = allAmounts.length;
+    const daysAmount = adjustedPaymentStatsObj.length;
+    const bottomIndentPercent = 0.2;
+    const maxYCoord = Number((svgHeight * (1 - bottomIndentPercent)).toFixed(0));
+
     const XStep = Number((svgWidth / (daysAmount - 1)).toFixed(5));
+    const YStep = Number((maxYCoord / (maxAmount - minAmount)).toFixed(5));
 
     function calcXCoord(day: number): number {
       return Number((day * XStep - XStep).toFixed(0));
     }
 
-    const bottomIndentPercent = 0.2;
-
-    const maxYCoord = Number((svgHeight * (1 - bottomIndentPercent)).toFixed(0));
-    const YStep = Number((maxYCoord / (maxAmount - minAmount)).toFixed(5));
-
     function calcYCoord(amount: number): number {
-      return Math.abs(Number(((amount - minAmount) * YStep).toFixed(0)) - 140);
+      return Math.abs(Number(((amount - minAmount) * YStep).toFixed(0)) - maxYCoord);
     }
 
-    const enhancedPaymentStatsObjs = paymentStats.map((p) => {
-      const dividedDate = divideDate(p.date);
+    // needs to be deleted
+    if (minAmount <= 0) {
+      const zeroLineYCoord = calcYCoord(0);
 
-      return {
-        amount: p.amount,
-        ...dividedDate,
-        x: calcXCoord(dividedDate.day),
-        y: calcYCoord(Number(p.amount)),
-      };
+      zeroLinePath = (
+        <path
+          d={`M 0 ${zeroLineYCoord} L ${svgWidth} ${zeroLineYCoord}`}
+          fill="none"
+          strokeWidth="2"
+          stroke="#9096A2"
+          strokeDasharray="5,5"
+        />
+      );
+    }
+
+    const paymentStatsWithCoords: PaymentStatsWithCoords[] = adjustedPaymentStatsObj.map((p) => ({
+      ...p,
+      x: calcXCoord(p.day),
+      y: calcYCoord(p.amount),
+    }));
+
+    // ===================
+
+    interface StrokeProps {
+      width: string,
+      colorGreen: string,
+      colorRed: string,
+      linejoin: 'round' | 'miter' | 'bevel' | 'inherit',
+    }
+
+    interface PrevAdditionalCoords {
+      x: number,
+      y: number,
+    }
+
+    type AmountType = 'negative' | 'positive';
+
+    const strokeProps: StrokeProps = {
+      width: '2',
+      colorGreen: '#0AAF60',
+      colorRed: '#FA4545',
+      linejoin: 'round',
+    };
+
+    const fillProps = {
+      colorGreen: 'url(#greenGradient)',
+      colorRed: 'url(#redGradient)',
+      opacity: '0.2',
+    };
+
+    let dStrokeStr: string;
+    let prevAdditionalCoords: PrevAdditionalCoords;
+
+    paymentStatsWithCoords.forEach((p, i) => {
+      // should be remade to ts type expression IS
+      function checkAmountType(amount: number): AmountType {
+        return amount >= 0 ? 'positive' : 'negative';
+      }
+
+      function drawFromPreviousAdditionalCoord() {
+        dStrokeStr += `M ${prevAdditionalCoords.x} ${prevAdditionalCoords.y}`;
+      }
+
+      function drawToNextAdditionalCoords() {
+
+      }
+
+      let prevAmountType: AmountType;
+      let nextAmountType: AmountType;
+
+      let isPrevAdditionalCoordsUsed: boolean;
+      let isNextAdditionalCoordsNeeded: boolean;
+
+      const prevStatsAmount = paymentStatsWithCoords[i - 1]?.amount;
+      const currenStatsAmount = p.amount;
+      const nextStatsAmount = paymentStatsWithCoords[i + 1]?.amount;
+
+      const currentAmountType = checkAmountType(currenStatsAmount);
+
+      if (i === 0) {
+        dStrokeStr = `M ${p.x} ${p.y}`;
+
+        nextAmountType = checkAmountType(nextStatsAmount);
+        isPrevAdditionalCoordsUsed = false;
+        isNextAdditionalCoordsNeeded = currentAmountType === nextAmountType;
+      } else if (i === daysAmount - 1) {
+        prevAmountType = checkAmountType(prevStatsAmount);
+        isPrevAdditionalCoordsUsed = prevAmountType === currentAmountType;
+        isNextAdditionalCoordsNeeded = false;
+      } else {
+        prevAmountType = checkAmountType(prevStatsAmount);
+        nextAmountType = checkAmountType(nextStatsAmount);
+        isPrevAdditionalCoordsUsed = prevAmountType === currentAmountType;
+        isNextAdditionalCoordsNeeded = currentAmountType === nextAmountType;
+      }
+
+      // const color = currentTrend === 'plus' ? 'colorGreen' : 'colorRed';
+
+      // if (isTrendTheSame && i === daysAmount - 1) {
+      //   paths.push(
+      //     <path
+      //       d={dStrokeStr}
+      //       fill="none"
+      //       strokeWidth={strokeProps.width}
+      //       stroke={strokeProps[color]}
+      //       strokeLinejoin={strokeProps.linejoin}
+      //     />,
+      //     <path
+      //       d={`${dStrokeStr} Z`}
+      //       fill={fillProps[color]}
+      //       stroke="none"
+      //       opacity={fillProps.opacity}
+      //     />,
+      //   );
+      // }
     });
 
-    const firstStatX = enhancedPaymentStatsObjs[0].x;
-    const firstStatY = enhancedPaymentStatsObjs[0].y;
-    let dStrokeStr = `M ${firstStatX} ${firstStatY}`;
+    // needs to be deleted
+    if (zeroLinePath) paths.push(zeroLinePath);
 
-    for (let i = 1; i < enhancedPaymentStatsObjs.length; i += 1) {
-      const statObj = enhancedPaymentStatsObjs[i];
+    // ==============================
 
-      dStrokeStr += ` L ${statObj.x} ${statObj.y}`;
-    }
+    setSvgPaths(paths);
 
-    let dFillStr = dStrokeStr;
-    dFillStr += `L  ${svgWidth} ${svgHeight} L 0 ${svgHeight} Z`;
+    console.log(paymentStatsWithCoords);
+  }, [adjustPaymentStats]);
 
-    setDStrokeAttribute(dStrokeStr);
-    setDFillAttribute(dFillStr);
-
-    console.log(enhancedPaymentStatsObjs);
-
-    console.log(`
-      canvasWidth: ${svgWidth};
-      canvasHeight: ${svgHeight};
-      maxYCoord: ${maxYCoord};
-      minAmount: ${minAmount};
-      maxAmount: ${maxAmount};
-    `);
-  }, [minAmount, maxAmount, allAmounts]);
+  useEffect(paintGraph, [paintGraph]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -313,20 +552,12 @@ export default function PaymentHistory() {
                 <stop offset="0" stopColor="#30C559" stopOpacity="0.7" />
                 <stop offset="1" stopColor="#30C559" stopOpacity="0" />
               </linearGradient>
+              <linearGradient id="redGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0" stopColor="#FA4545" stopOpacity="0" />
+                <stop offset="1" stopColor="#FA4545" stopOpacity="0.7" />
+              </linearGradient>
             </defs>
-            <path
-              d={dStrokeAttribute}
-              fill="none"
-              strokeWidth="2"
-              stroke="#0AAF60"
-              strokeLinejoin="round"
-            />
-            <path
-              d={dFillAttribute}
-              fill="url(#greenGradient)"
-              stroke="none"
-              opacity="0.2"
-            />
+            {...svgPaths}
           </svg>
         </div>
         <div className="w-full px-[24px] pb-[24px] flex justify-between items-center
