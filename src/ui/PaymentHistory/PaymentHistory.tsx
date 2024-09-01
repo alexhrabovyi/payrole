@@ -1,10 +1,13 @@
+/* eslint-disable no-restricted-globals */
 'use client';
 
 import {
-  ReactNode, useCallback, useEffect, useRef, useState,
+  MouseEventHandler,
+  ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
 import clsx from 'clsx';
 
+import useOnResize from '@/hooks/useOnResize';
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 
@@ -25,11 +28,19 @@ interface PaymentStatsWithCoords extends AdjustedPaymentStats {
   y: number,
 }
 
+interface SvgMetrics {
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+}
+
 interface StrokeProps {
   width: string,
   colorGreen: string,
   colorRed: string,
   linejoin: 'round' | 'miter' | 'bevel' | 'inherit',
+  strokeLinecap: 'butt' | 'square' | 'round'
 }
 
 interface PrevAdditionalCoords {
@@ -431,8 +442,31 @@ export default function PaymentHistory() {
   const svgRef = useRef<null | SVGSVGElement>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
+  const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [adjustedPaymentStats, setAdjustedPaymentStats] = useState<AdjustedPaymentStats[]>([]);
   const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
+  const [verticalLinePath, setVerticalLinePath] = useState<ReactNode>();
+
+  const calcSvgMetric = useCallback(() => {
+    const svgWrapper = svgWrapperRef.current;
+
+    if (!svgWrapper) return;
+
+    const width = svgWrapper.offsetWidth;
+    const height = svgWrapper.offsetHeight;
+
+    const { x, y } = svgWrapper.getBoundingClientRect();
+
+    setSvgMetrics({
+      width,
+      height,
+      x,
+      y,
+    });
+  }, []);
+
+  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
+  useOnResize(calcSvgMetric);
 
   const adjustPaymentStats = useCallback(() => {
     const statsObj = paymentStats4;
@@ -516,6 +550,7 @@ export default function PaymentHistory() {
   }, []);
 
   const paintGraph = useCallback(() => {
+    const TOP_INDENT_PX = 60;
     const BOTTOM_INDENT_PERCENT = 0.1;
 
     const STROKE_PROPS: StrokeProps = {
@@ -523,6 +558,7 @@ export default function PaymentHistory() {
       colorGreen: '#0AAF60',
       colorRed: '#FA4545',
       linejoin: 'round',
+      strokeLinecap: 'round',
     };
 
     const FILL_PROPS = {
@@ -579,6 +615,7 @@ export default function PaymentHistory() {
           strokeWidth={STROKE_PROPS.width}
           stroke={STROKE_PROPS[color]}
           strokeLinejoin={STROKE_PROPS.linejoin}
+          strokeLinecap={STROKE_PROPS.strokeLinecap}
         />,
         <path
           d={fillStr}
@@ -637,10 +674,11 @@ export default function PaymentHistory() {
     const maxAmount = Math.max(...allAmounts);
 
     const daysAmount = adjustedPaymentStats.length;
+    const minYCoord = TOP_INDENT_PX;
     const maxYCoord = Number((svgHeight * (1 - BOTTOM_INDENT_PERCENT)).toFixed(0));
 
     const XStep = Number((svgWidth / (daysAmount - 1)).toFixed(5));
-    const YStep = Number((maxYCoord / (maxAmount - minAmount)).toFixed(5));
+    const YStep = Number(((maxYCoord - minYCoord) / (maxAmount - minAmount)).toFixed(5));
 
     const zeroLineYCoord = calcYCoord(0, YStep, minAmount, maxYCoord);
 
@@ -791,6 +829,32 @@ export default function PaymentHistory() {
   useEffect(adjustPaymentStats, [adjustPaymentStats]);
   useEffect(paintGraph, [paintGraph]);
 
+  const svgOnMouseOver = useCallback<MouseEventHandler<SVGSVGElement>>(() => {
+    const onMouseMove: EventListener = (e: MouseEventInit) => {
+      const clientX = e.clientX as number;
+      const verticalLineX = clientX - svgMetrics!.x;
+      const verticalLineBottomY = svgMetrics!.height;
+      const verticalLine = (
+        <path
+          d={`M ${verticalLineX} 0 L ${verticalLineX} ${verticalLineBottomY}`}
+          fill="none"
+          strokeWidth="2"
+          stroke="#CACACE"
+          strokeDasharray="5,5"
+        />
+      );
+
+      setVerticalLinePath(verticalLine);
+    };
+
+    svgRef.current!.addEventListener('mousemove', onMouseMove);
+
+    svgRef.current!.addEventListener('mouseout', () => {
+      setVerticalLinePath(null);
+      removeEventListener('mousemove', onMouseMove);
+    }, { once: true });
+  }, [svgMetrics]);
+
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
       <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
@@ -846,7 +910,7 @@ export default function PaymentHistory() {
           </div>
         </div>
       </div>
-      <div className="w-full h-full pt-[60px] flex flex-col justify-start items-start gap-[16px]">
+      <div className="w-full h-full flex flex-col justify-start items-start gap-[16px]">
         <div
           ref={svgWrapperRef}
           className="w-full h-full"
@@ -856,6 +920,7 @@ export default function PaymentHistory() {
             className="w-full h-full"
             version="1.1"
             xmlns="http://www.w3.org/2000/svg"
+            onMouseOver={svgOnMouseOver}
           >
             <defs>
               <linearGradient id="greenGradient" x1="0" x2="0" y1="0" y2="1">
@@ -868,6 +933,7 @@ export default function PaymentHistory() {
               </linearGradient>
             </defs>
             {...svgPaths}
+            {verticalLinePath}
           </svg>
         </div>
         <div className="w-full px-[24px] pb-[24px] flex justify-between items-center
