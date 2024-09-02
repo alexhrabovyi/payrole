@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 'use client';
 
 import {
@@ -11,7 +10,7 @@ import clsx from 'clsx';
 import useOnResize from '@/hooks/useOnResize';
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
-import RevenueIcon from './imgs/revenue_icon.svg';
+import CurrentStatsTip from './CurrentStatsTip/CurrentStatsTip';
 
 interface PaymentStats {
   date: string,
@@ -22,12 +21,19 @@ interface AdjustedPaymentStats {
   amount: number,
   day: number,
   month: string,
+  monthNum: number,
   year: number,
+  weekday: string,
 }
 
 interface PaymentStatsWithCoords extends AdjustedPaymentStats {
   x: number,
   y: number,
+}
+
+export interface TipConfig extends PaymentStatsWithCoords {
+  svgElX: number,
+  svgElY: number,
 }
 
 interface SvgMetrics {
@@ -425,33 +431,52 @@ const paymentStats4: PaymentStats[] = [
 ];
 
 const MONTHS: Record<number, string> = {
-  1: 'January',
-  2: 'February',
-  3: 'March',
-  4: 'April',
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
   5: 'May',
-  6: 'June',
-  7: 'July',
-  8: 'August',
-  9: 'September',
-  10: 'October',
-  11: 'November',
-  12: 'December',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec',
+};
+
+const WEEKDAYS: Record<number, string> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
 };
 
 export default function PaymentHistory() {
+  const graphAndDatesRef = useRef<null | HTMLDivElement>(null);
   const svgWrapperRef = useRef<null | HTMLDivElement>(null);
   const svgRef = useRef<null | SVGSVGElement>(null);
 
+  const [bodyEl, setBodyEl] = useState<HTMLElement | null>(null);
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [adjustedPaymentStats, setAdjustedPaymentStats] = useState<AdjustedPaymentStats[]>([]);
   const [statsWithCoords, setStatsWithCoords] = useState<PaymentStatsWithCoords[]>([]);
   const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
-  const [isVerticalLineActive, setIsVerticalLineActive] = useState(false);
+  const [isTipAndVerticalLineActive, setIsTipAndVerticalLineActive] = useState(false);
   const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
-  const [currentHoveredStats,
-    setCurrentHoveredStats] = useState<PaymentStatsWithCoords | null>(null);
+  const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
+
+  const findBody = useCallback(() => {
+    const body = document.querySelector('body');
+
+    setBodyEl(body);
+  }, []);
+
+  useEffect(findBody, [findBody]);
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -481,13 +506,19 @@ export default function PaymentHistory() {
       const splittedDate = dateStr.split('-');
 
       const day = Number(splittedDate[1]);
-      const month = MONTHS[Number(splittedDate[0])];
+      const monthNum = Number(splittedDate[0]);
+      const month = MONTHS[monthNum];
       const year = Number(splittedDate[2]);
+
+      const dateObj = new Date(year, monthNum - 1, day);
+      const weekday = WEEKDAYS[dateObj.getDay()];
 
       return {
         day,
         month,
+        monthNum,
         year,
+        weekday,
       };
     }
 
@@ -496,14 +527,20 @@ export default function PaymentHistory() {
       startDate: number,
       endDate: number,
       month: string,
+      monthNum: number,
       year: number,
     ) {
       for (let i = startDate; i < endDate; i += 1) {
+        const dateObj = new Date(year, monthNum - 1, i);
+        const weekday = WEEKDAYS[dateObj.getDay()];
+
         resultingStatsObj.push({
           amount: 0,
           day: i,
           month,
+          monthNum,
           year,
+          weekday,
         });
       }
     }
@@ -532,6 +569,7 @@ export default function PaymentHistory() {
           prevDay + 1,
           currentDay,
           firstAdjustedStatsDate.month,
+          firstAdjustedStatsDate.monthNum,
           firstAdjustedStatsDate.year,
         );
       }
@@ -547,6 +585,7 @@ export default function PaymentHistory() {
           currentDay + 1,
           32,
           firstAdjustedStatsDate.month,
+          firstAdjustedStatsDate.monthNum,
           firstAdjustedStatsDate.year,
         );
       }
@@ -830,75 +869,48 @@ export default function PaymentHistory() {
     });
 
     setSvgPaths(paths);
-
-    console.log(paymentStatsWithCoords);
   }, [adjustedPaymentStats]);
 
   useEffect(adjustPaymentStats, [adjustPaymentStats]);
   useEffect(paintGraph, [paintGraph]);
 
-  const svgOnMouseOver = useCallback<MouseEventHandler<SVGSVGElement>>(() => {
+  const graphOnMouseEnter = useCallback<MouseEventHandler<HTMLDivElement>>(() => {
     const onMouseMove: EventListener = (e: MouseEventInit) => {
       const clientX = e.clientX as number;
       const currentSvgX = clientX - svgMetrics!.x;
-      let newCurrentHoveredStats: PaymentStatsWithCoords = {} as PaymentStatsWithCoords;
+      let currentHoveredStats: PaymentStatsWithCoords = {} as PaymentStatsWithCoords;
 
       for (let i = 0; i < statsWithCoords.length; i += 1) {
         if (currentSvgX <= statsWithCoords[i].x) {
-          newCurrentHoveredStats = statsWithCoords[i];
+          currentHoveredStats = statsWithCoords[i];
           break;
         }
       }
 
       const verticalLineBottomY = svgMetrics!.height;
 
-      setCurrentHoveredStats(newCurrentHoveredStats!);
-      setVerticalLineDStroke(`M ${newCurrentHoveredStats.x || 0} 0 L ${newCurrentHoveredStats.x || 0} ${verticalLineBottomY}`);
-      setIsVerticalLineActive(true);
+      const newTipConfig = {
+        ...currentHoveredStats,
+        svgElX: svgMetrics!.x,
+        svgElY: svgMetrics!.y,
+      };
+
+      setTipConfig(newTipConfig);
+      setVerticalLineDStroke(`M ${currentHoveredStats.x || 0} 0 L ${currentHoveredStats.x || 0} ${verticalLineBottomY}`);
+      setIsTipAndVerticalLineActive(true);
     };
 
-    svgRef.current!.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mousemove', onMouseMove);
 
-    svgRef.current!.addEventListener('mouseout', () => {
-      setIsVerticalLineActive(false);
-      removeEventListener('mousemove', onMouseMove);
+    graphAndDatesRef.current!.addEventListener('mouseleave', () => {
+      console.log(true);
+      setIsTipAndVerticalLineActive(false);
+      document.removeEventListener('mousemove', onMouseMove);
     }, { once: true });
   }, [svgMetrics, statsWithCoords]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
-      {createPortal(
-        <div className="top-[20px] left-[20px] absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10">
-          <div className="relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]">
-            <p className="font-tthoves font-medium text-[14px] text-grey-500">
-              Tuesday, Feb 15, 2022
-            </p>
-            <div className="w-full flex justify-start items-center gap-[8px] p-[8px] rounded-[8px] bg-[#F3F4F7]">
-              <RevenueIcon className="w-[24px] h-auto" />
-              <p className="font-tthoves font-medium text-[14px] text-grey-500">
-                Revenue
-              </p>
-              <p className="font-tthoves font-medium text-[16px] text-darkBlue">
-                $4,251
-              </p>
-            </div>
-            <svg
-              className="absolute bottom-0 left-[50%] translate-y-[80%] translate-x-[-50%]"
-              width="12"
-              height="9"
-              viewBox="0 0 12 9"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M7.44115 7.50231C6.65435 8.31998 5.34565 8.31998 4.55885 7.50231L0.598648 3.38675C-0.623995 2.11615 0.27648 1.25385e-06 2.0398 1.11324e-06L9.96019 4.81637e-07C11.7235 3.41023e-07 12.624 2.11614 11.4014 3.38675L7.44115 7.50231Z" fill="white" />
-            </svg>
-          </div>
-          <span className="w-[16px] h-[16px] flex justify-center items-center rounded-[50%] bg-white shadow-[0_4px_10px_0_rgba(77,100,255,0.5)]">
-            <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
-          </span>
-        </div>,
-        document.body,
-      )}
       <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
         <div className="w-full flex justify-between items-center">
           <h2 className="font-tthoves font-medium text-[20px] text-darkBlue">
@@ -952,7 +964,18 @@ export default function PaymentHistory() {
           </div>
         </div>
       </div>
-      <div className="w-full h-full flex flex-col justify-start items-start gap-[16px]">
+      <div
+        ref={graphAndDatesRef}
+        className="w-full h-full flex flex-col justify-start items-start gap-[16px]"
+        onMouseEnter={graphOnMouseEnter}
+      >
+        {bodyEl && createPortal(
+          <CurrentStatsTip
+            isActive={isTipAndVerticalLineActive}
+            tipConfig={tipConfig}
+          />,
+          document.body,
+        )}
         <div
           ref={svgWrapperRef}
           className="w-full h-full"
@@ -962,7 +985,6 @@ export default function PaymentHistory() {
             className="w-full h-full"
             version="1.1"
             xmlns="http://www.w3.org/2000/svg"
-            onMouseOver={svgOnMouseOver}
           >
             <defs>
               <linearGradient id="greenGradient" x1="0" x2="0" y1="0" y2="1">
@@ -975,7 +997,7 @@ export default function PaymentHistory() {
               </linearGradient>
             </defs>
             {...svgPaths}
-            {isVerticalLineActive && (
+            {isTipAndVerticalLineActive && (
               <path
                 d={verticalLineDStroke}
                 fill="none"
