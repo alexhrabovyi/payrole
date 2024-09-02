@@ -62,6 +62,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
   return (
     <div
       ref={tipRef}
+      id={tipConfig?.id}
       className="absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10 translate-x-[-50%]"
       style={{
         left: `${XCoord}px`,

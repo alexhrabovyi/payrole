@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  MouseEventHandler,
   ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -34,6 +33,7 @@ interface PaymentStatsWithCoords extends AdjustedPaymentStats {
 export interface TipConfig extends PaymentStatsWithCoords {
   svgElX: number,
   svgElY: number,
+  id: string,
 }
 
 interface SvgMetrics {
@@ -58,377 +58,55 @@ interface PrevAdditionalCoords {
 
 type AmountType = 'negative' | 'positive';
 
-// 31 day of the same month. Only positive numbers;
-const paymentStats: PaymentStats[] = [
-  {
-    date: '12-01-2023',
-    amount: '3232',
-  },
-  {
-    date: '12-02-2023',
-    amount: '500',
-  },
-  {
-    date: '12-03-2023',
-    amount: '4518',
-  },
-  {
-    date: '12-04-2023',
-    amount: '311',
-  },
-  {
-    date: '12-05-2023',
-    amount: '7846',
-  },
-  {
-    date: '12-06-2023',
-    amount: '1024',
-  },
-  {
-    date: '12-07-2023',
-    amount: '2854',
-  },
-  {
-    date: '12-08-2023',
-    amount: '4853',
-  },
-  {
-    date: '12-09-2023',
-    amount: '783',
-  },
-  {
-    date: '12-10-2023',
-    amount: '561',
-  },
-  {
-    date: '12-11-2023',
-    amount: '1145',
-  },
-  {
-    date: '12-12-2023',
-    amount: '434',
-  },
-  {
-    date: '12-13-2023',
-    amount: '1643',
-  },
-  {
-    date: '12-14-2023',
-    amount: '754',
-  },
-  {
-    date: '12-15-2023',
-    amount: '1132',
-  },
-  {
-    date: '12-16-2023',
-    amount: '2165',
-  },
-  {
-    date: '12-17-2023',
-    amount: '3781',
-  },
-  {
-    date: '12-18-2023',
-    amount: '1784',
-  },
-  {
-    date: '12-19-2023',
-    amount: '831',
-  },
-  {
-    date: '12-20-2023',
-    amount: '411',
-  },
-  {
-    date: '12-21-2023',
-    amount: '932',
-  },
-  {
-    date: '12-22-2023',
-    amount: '1315',
-  },
-  {
-    date: '12-23-2023',
-    amount: '1810',
-  },
-  {
-    date: '12-24-2023',
-    amount: '1284',
-  },
-  {
-    date: '12-25-2023',
-    amount: '2914',
-  },
-  {
-    date: '12-26-2023',
-    amount: '611',
-  },
-  {
-    date: '12-27-2023',
-    amount: '341',
-  },
-  {
-    date: '12-28-2023',
-    amount: '2931',
-  },
-  {
-    date: '12-29-2023',
-    amount: '1983',
-  },
-  {
-    date: '12-30-2023',
-    amount: '3010',
-  },
-  {
-    date: '12-31-2023',
-    amount: '2071',
-  },
-];
+function generateRandomStats(): PaymentStats[] {
+  function generateRandomNum(min: number, max: number) {
+    return (Math.random() * (max - min + 1) + min).toFixed(0);
+  }
 
-// 5 days of the same month. Only positive numbers;
-const paymentStats1: PaymentStats[] = [
-  {
-    date: '12-03-2023',
-    amount: '2071',
-  },
-  {
-    date: '12-11-2023',
-    amount: '1325',
-  },
-  {
-    date: '12-15-2023',
-    amount: '3561',
-  },
-  {
-    date: '12-16-2023',
-    amount: '2323',
-  },
-  {
-    date: '12-28-2023',
-    amount: '1531',
-  },
-];
+  function createStatsObj(amount: string, year: number, month: number, day: number): PaymentStats {
+    return {
+      amount,
+      date: `${month + 1}-${day}-${year}`,
+    };
+  }
 
-// 7 days of the same month. Three negative numbers;
-const paymentStats2: PaymentStats[] = [
-  {
-    date: '12-03-2023',
-    amount: '2071',
-  },
-  {
-    date: '12-14-2023',
-    amount: '2561',
-  },
-  {
-    date: '12-15-2023',
-    amount: '-3432',
-  },
-  {
-    date: '12-16-2023',
-    amount: '-2451',
-  },
-  {
-    date: '12-17-2023',
-    amount: '-551',
-  },
-  {
-    date: '12-19-2023',
-    amount: '2323',
-  },
-  {
-    date: '12-28-2023',
-    amount: '1531',
-  },
-];
+  const MIN_AMOUNT = -1500;
+  const MAX_AMOUNT = 3500;
 
-// all days are of the same month. Positive and negative numbers;
-const paymentStats3: PaymentStats[] = [
-  {
-    date: '12-01-2023',
-    amount: '3232',
-  },
-  {
-    date: '12-04-2023',
-    amount: '311',
-  },
-  {
-    date: '12-05-2023',
-    amount: '-2351',
-  },
-  {
-    date: '12-06-2023',
-    amount: '-522',
-  },
-  {
-    date: '12-07-2023',
-    amount: '2854',
-  },
-  {
-    date: '12-10-2023',
-    amount: '561',
-  },
-  {
-    date: '12-11-2023',
-    amount: '1145',
-  },
-  {
-    date: '12-12-2023',
-    amount: '434',
-  },
-  {
-    date: '12-13-2023',
-    amount: '-1643',
-  },
-  {
-    date: '12-15-2023',
-    amount: '1132',
-  },
-  {
-    date: '12-16-2023',
-    amount: '2165',
-  },
-  {
-    date: '12-17-2023',
-    amount: '3781',
-  },
-  {
-    date: '12-18-2023',
-    amount: '1784',
-  },
-  {
-    date: '12-20-2023',
-    amount: '-411',
-  },
-  {
-    date: '12-21-2023',
-    amount: '-932',
-  },
-  {
-    date: '12-23-2023',
-    amount: '-1810',
-  },
-  {
-    date: '12-24-2023',
-    amount: '1284',
-  },
-  {
-    date: '12-25-2023',
-    amount: '2914',
-  },
-  {
-    date: '12-27-2023',
-    amount: '341',
-  },
-  {
-    date: '12-28-2023',
-    amount: '2931',
-  },
-  {
-    date: '12-30-2023',
-    amount: '-3010',
-  },
-  {
-    date: '12-31-2023',
-    amount: '-2071',
-  },
-];
+  const currentDate = new Date();
+  const currentDay = currentDate.getDate();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
 
-// all days are of the same month. Positive and negative numbers;
-const paymentStats4: PaymentStats[] = [
-  {
-    date: '12-01-2023',
-    amount: '-3232',
-  },
-  // {
-  //   date: '12-02-2023',
-  //   amount: '-1311',
-  // },
-  {
-    date: '12-04-2023',
-    amount: '-311',
-  },
-  {
-    date: '12-05-2023',
-    amount: '-2351',
-  },
-  {
-    date: '12-06-2023',
-    amount: '522',
-  },
-  {
-    date: '12-07-2023',
-    amount: '2854',
-  },
-  {
-    date: '12-10-2023',
-    amount: '561',
-  },
-  {
-    date: '12-11-2023',
-    amount: '1145',
-  },
-  {
-    date: '12-12-2023',
-    amount: '434',
-  },
-  {
-    date: '12-13-2023',
-    amount: '-1643',
-  },
-  {
-    date: '12-15-2023',
-    amount: '1132',
-  },
-  {
-    date: '12-16-2023',
-    amount: '2165',
-  },
-  {
-    date: '12-17-2023',
-    amount: '3781',
-  },
-  {
-    date: '12-18-2023',
-    amount: '1784',
-  },
-  {
-    date: '12-20-2023',
-    amount: '-411',
-  },
-  {
-    date: '12-21-2023',
-    amount: '-932',
-  },
-  {
-    date: '12-23-2023',
-    amount: '-1810',
-  },
-  {
-    date: '12-24-2023',
-    amount: '1284',
-  },
-  {
-    date: '12-25-2023',
-    amount: '2914',
-  },
-  {
-    date: '12-27-2023',
-    amount: '341',
-  },
-  {
-    date: '12-28-2023',
-    amount: '2931',
-  },
-  {
-    date: '12-30-2023',
-    amount: '-3010',
-  },
-  {
-    date: '12-31-2023',
-    amount: '-2071',
-  },
-];
+  const currentMonthFirstDay = new Date(currentYear, currentMonth, 1).getDate();
+
+  const monthAgoDate = new Date(currentYear, currentMonth, currentDay - 32);
+  const monthAgoDay = monthAgoDate.getDate();
+  const monthAgoMonth = monthAgoDate.getMonth();
+  const monthAgoYear = monthAgoDate.getFullYear();
+
+  const prevMonthMaxDay = new Date(currentYear, currentMonth, 0).getDate();
+
+  const arrOfPaymentStats: PaymentStats[] = [];
+
+  for (let i = monthAgoDay; i <= prevMonthMaxDay; i += 1) {
+    const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
+
+    const statsObj = createStatsObj(randomNum, monthAgoYear, monthAgoMonth, i);
+    arrOfPaymentStats.push(statsObj);
+  }
+
+  for (let i = currentMonthFirstDay; i <= currentDay; i += 1) {
+    const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
+
+    const statsObj = createStatsObj(randomNum, currentYear, currentMonth, i);
+    arrOfPaymentStats.push(statsObj);
+  }
+
+  return arrOfPaymentStats;
+}
+
+const paymentStats = generateRandomStats();
 
 const MONTHS: Record<number, string> = {
   1: 'Jan',
@@ -470,6 +148,8 @@ export default function PaymentHistory() {
   const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
 
+  const tipId = 'statsTipEl';
+
   const findBody = useCallback(() => {
     const body = document.querySelector('body');
 
@@ -486,7 +166,9 @@ export default function PaymentHistory() {
     const width = svgWrapper.offsetWidth;
     const height = svgWrapper.offsetHeight;
 
-    const { x, y } = svgWrapper.getBoundingClientRect();
+    const { x: windowX, y: windowY } = svgWrapper.getBoundingClientRect();
+    const x = windowX + window.scrollX;
+    const y = windowY + window.scrollY;
 
     setSvgMetrics({
       width,
@@ -500,7 +182,7 @@ export default function PaymentHistory() {
   useOnResize(calcSvgMetric);
 
   const adjustPaymentStats = useCallback(() => {
-    const statsObj = paymentStats4;
+    const statsObj = paymentStats;
 
     function divideDate(dateStr: string) {
       const splittedDate = dateStr.split('-');
@@ -522,73 +204,15 @@ export default function PaymentHistory() {
       };
     }
 
-    function fillWithPaymentStats(
-      resultingStatsObj: AdjustedPaymentStats[],
-      startDate: number,
-      endDate: number,
-      month: string,
-      monthNum: number,
-      year: number,
-    ) {
-      for (let i = startDate; i < endDate; i += 1) {
-        const dateObj = new Date(year, monthNum - 1, i);
-        const weekday = WEEKDAYS[dateObj.getDay()];
-
-        resultingStatsObj.push({
-          amount: 0,
-          day: i,
-          month,
-          monthNum,
-          year,
-          weekday,
-        });
-      }
-    }
-
     const adjustedPaymentStatsObj: AdjustedPaymentStats[] = [];
-    const firstAdjustedStatsDate = divideDate(statsObj[0].date);
 
-    statsObj.forEach((obj, i) => {
-      const currentObjAdjustedDate = divideDate(obj.date);
-      const currentDay = currentObjAdjustedDate.day;
-      let prevDay: number;
-
-      const prevObj = statsObj[i - 1];
-
-      if (prevObj) {
-        prevDay = divideDate(prevObj.date).day;
-      } else {
-        prevDay = 0;
-      }
-
-      const diff = currentDay - prevDay;
-
-      if (diff !== 1) {
-        fillWithPaymentStats(
-          adjustedPaymentStatsObj,
-          prevDay + 1,
-          currentDay,
-          firstAdjustedStatsDate.month,
-          firstAdjustedStatsDate.monthNum,
-          firstAdjustedStatsDate.year,
-        );
-      }
+    statsObj.forEach((obj) => {
+      const dateInfo = divideDate(obj.date);
 
       adjustedPaymentStatsObj.push({
+        ...dateInfo,
         amount: Number(obj.amount),
-        ...currentObjAdjustedDate,
       });
-
-      if ((i === statsObj.length - 1) && currentDay !== 31) {
-        fillWithPaymentStats(
-          adjustedPaymentStatsObj,
-          currentDay + 1,
-          32,
-          firstAdjustedStatsDate.month,
-          firstAdjustedStatsDate.monthNum,
-          firstAdjustedStatsDate.year,
-        );
-      }
     });
 
     setAdjustedPaymentStats(adjustedPaymentStatsObj);
@@ -612,8 +236,8 @@ export default function PaymentHistory() {
       opacity: '0.3',
     };
 
-    function calcXCoord(day: number, step: number) {
-      return Number((day * step - step).toFixed(0));
+    function calcXCoord(statsArrIndex: number, step: number) {
+      return Number((statsArrIndex * step).toFixed(0));
     }
 
     function calcYCoord(amount: number, step: number, minAmount: number, maxYCoord: number) {
@@ -727,9 +351,9 @@ export default function PaymentHistory() {
 
     const zeroLineYCoord = calcYCoord(0, YStep, minAmount, maxYCoord);
 
-    const paymentStatsWithCoords: PaymentStatsWithCoords[] = adjustedPaymentStats.map((p) => ({
+    const paymentStatsWithCoords: PaymentStatsWithCoords[] = adjustedPaymentStats.map((p, i) => ({
       ...p,
-      x: calcXCoord(p.day, XStep),
+      x: calcXCoord(i, XStep),
       y: calcYCoord(p.amount, YStep, minAmount, maxYCoord),
     }));
 
@@ -874,11 +498,16 @@ export default function PaymentHistory() {
   useEffect(adjustPaymentStats, [adjustPaymentStats]);
   useEffect(paintGraph, [paintGraph]);
 
-  const graphOnMouseEnter = useCallback<MouseEventHandler<HTMLDivElement>>(() => {
-    const onMouseMove: EventListener = (e: MouseEventInit) => {
-      const clientX = e.clientX as number;
-      const currentSvgX = clientX - svgMetrics!.x;
-      let currentHoveredStats: PaymentStatsWithCoords = {} as PaymentStatsWithCoords;
+  const onGraphHover = useCallback((e: MouseEventInit) => {
+    const clientX = e.clientX || -1;
+    const clientY = e.clientY || -1;
+
+    const elemBelow = document.elementFromPoint(clientX, clientY);
+    const graphAndDatesElement = elemBelow?.closest('#graphAndDatesBlock') || elemBelow?.closest(`#${tipId}`);
+
+    if (graphAndDatesElement && svgMetrics) {
+      const currentSvgX = clientX - svgMetrics.x;
+      let currentHoveredStats: PaymentStatsWithCoords | undefined;
 
       for (let i = 0; i < statsWithCoords.length; i += 1) {
         if (currentSvgX <= statsWithCoords[i].x) {
@@ -887,27 +516,34 @@ export default function PaymentHistory() {
         }
       }
 
-      const verticalLineBottomY = svgMetrics!.height;
+      if (!currentHoveredStats) return;
+
+      const verticalLineBottomY = svgMetrics.height;
 
       const newTipConfig = {
         ...currentHoveredStats,
-        svgElX: svgMetrics!.x,
-        svgElY: svgMetrics!.y,
+        svgElX: svgMetrics.x,
+        svgElY: svgMetrics.y,
+        id: tipId,
       };
 
       setTipConfig(newTipConfig);
       setVerticalLineDStroke(`M ${currentHoveredStats.x || 0} 0 L ${currentHoveredStats.x || 0} ${verticalLineBottomY}`);
       setIsTipAndVerticalLineActive(true);
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-
-    graphAndDatesRef.current!.addEventListener('mouseleave', () => {
-      console.log(true);
+    } else {
       setIsTipAndVerticalLineActive(false);
-      document.removeEventListener('mousemove', onMouseMove);
-    }, { once: true });
-  }, [svgMetrics, statsWithCoords]);
+    }
+  }, [statsWithCoords, svgMetrics]);
+
+  const addGraphHoverListener = useCallback(() => {
+    document.addEventListener('mousemove', onGraphHover);
+
+    return () => {
+      document.removeEventListener('mousemove', onGraphHover);
+    };
+  }, [onGraphHover]);
+
+  useEffect(addGraphHoverListener, [addGraphHoverListener]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -965,9 +601,9 @@ export default function PaymentHistory() {
         </div>
       </div>
       <div
+        id="graphAndDatesBlock"
         ref={graphAndDatesRef}
         className="w-full h-full flex flex-col justify-start items-start gap-[16px]"
-        onMouseEnter={graphOnMouseEnter}
       >
         {bodyEl && createPortal(
           <CurrentStatsTip
