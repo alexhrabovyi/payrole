@@ -444,8 +444,12 @@ export default function PaymentHistory() {
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [adjustedPaymentStats, setAdjustedPaymentStats] = useState<AdjustedPaymentStats[]>([]);
+  const [statsWithCoords, setStatsWithCoords] = useState<PaymentStatsWithCoords[]>([]);
   const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
-  const [verticalLinePath, setVerticalLinePath] = useState<ReactNode>();
+  const [isVerticalLineActive, setIsVerticalLineActive] = useState(false);
+  const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
+  const [currentHoveredStats,
+    setCurrentHoveredStats] = useState<PaymentStatsWithCoords | null>(null);
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -688,6 +692,8 @@ export default function PaymentHistory() {
       y: calcYCoord(p.amount, YStep, minAmount, maxYCoord),
     }));
 
+    setStatsWithCoords(paymentStatsWithCoords);
+
     let dStrokeStr: string;
     let prevAdditionalCoords: PrevAdditionalCoords;
 
@@ -832,28 +838,30 @@ export default function PaymentHistory() {
   const svgOnMouseOver = useCallback<MouseEventHandler<SVGSVGElement>>(() => {
     const onMouseMove: EventListener = (e: MouseEventInit) => {
       const clientX = e.clientX as number;
-      const verticalLineX = clientX - svgMetrics!.x;
-      const verticalLineBottomY = svgMetrics!.height;
-      const verticalLine = (
-        <path
-          d={`M ${verticalLineX} 0 L ${verticalLineX} ${verticalLineBottomY}`}
-          fill="none"
-          strokeWidth="2"
-          stroke="#CACACE"
-          strokeDasharray="5,5"
-        />
-      );
+      const currentSvgX = clientX - svgMetrics!.x;
+      let newCurrentHoveredStats: PaymentStatsWithCoords;
 
-      setVerticalLinePath(verticalLine);
+      for (let i = 0; i < statsWithCoords.length; i += 1) {
+        if (currentSvgX <= statsWithCoords[i].x) {
+          newCurrentHoveredStats = statsWithCoords[i];
+          break;
+        }
+      }
+
+      const verticalLineBottomY = svgMetrics!.height;
+
+      setCurrentHoveredStats(newCurrentHoveredStats!);
+      setVerticalLineDStroke(`M ${newCurrentHoveredStats!.x} 0 L ${newCurrentHoveredStats!.x} ${verticalLineBottomY}`);
+      setIsVerticalLineActive(true);
     };
 
     svgRef.current!.addEventListener('mousemove', onMouseMove);
 
     svgRef.current!.addEventListener('mouseout', () => {
-      setVerticalLinePath(null);
+      setIsVerticalLineActive(false);
       removeEventListener('mousemove', onMouseMove);
     }, { once: true });
-  }, [svgMetrics]);
+  }, [svgMetrics, statsWithCoords]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -933,7 +941,15 @@ export default function PaymentHistory() {
               </linearGradient>
             </defs>
             {...svgPaths}
-            {verticalLinePath}
+            {isVerticalLineActive && (
+              <path
+                d={verticalLineDStroke}
+                fill="none"
+                strokeWidth="2"
+                stroke="#CACACE"
+                strokeDasharray="5,5"
+              />
+            )}
           </svg>
         </div>
         <div className="w-full px-[24px] pb-[24px] flex justify-between items-center
