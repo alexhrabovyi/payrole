@@ -5,11 +5,13 @@ import {
   MouseEventHandler,
   ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 
 import useOnResize from '@/hooks/useOnResize';
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
+import RevenueIcon from './imgs/revenue_icon.svg';
 
 interface PaymentStats {
   date: string,
@@ -839,7 +841,7 @@ export default function PaymentHistory() {
     const onMouseMove: EventListener = (e: MouseEventInit) => {
       const clientX = e.clientX as number;
       const currentSvgX = clientX - svgMetrics!.x;
-      let newCurrentHoveredStats: PaymentStatsWithCoords;
+      let newCurrentHoveredStats: PaymentStatsWithCoords = {} as PaymentStatsWithCoords;
 
       for (let i = 0; i < statsWithCoords.length; i += 1) {
         if (currentSvgX <= statsWithCoords[i].x) {
@@ -851,7 +853,7 @@ export default function PaymentHistory() {
       const verticalLineBottomY = svgMetrics!.height;
 
       setCurrentHoveredStats(newCurrentHoveredStats!);
-      setVerticalLineDStroke(`M ${newCurrentHoveredStats!.x} 0 L ${newCurrentHoveredStats!.x} ${verticalLineBottomY}`);
+      setVerticalLineDStroke(`M ${newCurrentHoveredStats.x || 0} 0 L ${newCurrentHoveredStats.x || 0} ${verticalLineBottomY}`);
       setIsVerticalLineActive(true);
     };
 
@@ -865,6 +867,38 @@ export default function PaymentHistory() {
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
+      {createPortal(
+        <div className="top-[20px] left-[20px] absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10">
+          <div className="relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]">
+            <p className="font-tthoves font-medium text-[14px] text-grey-500">
+              Tuesday, Feb 15, 2022
+            </p>
+            <div className="w-full flex justify-start items-center gap-[8px] p-[8px] rounded-[8px] bg-[#F3F4F7]">
+              <RevenueIcon className="w-[24px] h-auto" />
+              <p className="font-tthoves font-medium text-[14px] text-grey-500">
+                Revenue
+              </p>
+              <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+                $4,251
+              </p>
+            </div>
+            <svg
+              className="absolute bottom-0 left-[50%] translate-y-[80%] translate-x-[-50%]"
+              width="12"
+              height="9"
+              viewBox="0 0 12 9"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M7.44115 7.50231C6.65435 8.31998 5.34565 8.31998 4.55885 7.50231L0.598648 3.38675C-0.623995 2.11615 0.27648 1.25385e-06 2.0398 1.11324e-06L9.96019 4.81637e-07C11.7235 3.41023e-07 12.624 2.11614 11.4014 3.38675L7.44115 7.50231Z" fill="white" />
+            </svg>
+          </div>
+          <span className="w-[16px] h-[16px] flex justify-center items-center rounded-[50%] bg-white shadow-[0_4px_10px_0_rgba(77,100,255,0.5)]">
+            <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
+          </span>
+        </div>,
+        document.body,
+      )}
       <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
         <div className="w-full flex justify-between items-center">
           <h2 className="font-tthoves font-medium text-[20px] text-darkBlue">
