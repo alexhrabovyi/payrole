@@ -1,22 +1,23 @@
 'use client';
 
 import {
-  ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState,
+  ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import { createPortal } from 'react-dom';
-import clsx from 'clsx';
 
 import useOnResize from '@/hooks/useOnResize';
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 import CurrentStatsTip from './CurrentStatsTip/CurrentStatsTip';
 
+type AmountType = 'negative' | 'positive';
+
 interface PaymentStats {
   date: string,
   amount: string,
 }
 
-interface AdjustedPaymentStats {
+interface FormattedPaymentStats {
   amount: number,
   day: number,
   month: string,
@@ -25,7 +26,7 @@ interface AdjustedPaymentStats {
   weekday: string,
 }
 
-interface PaymentStatsWithCoords extends AdjustedPaymentStats {
+interface PaymentStatsWithCoords extends FormattedPaymentStats {
   x: number,
   y: number,
 }
@@ -39,8 +40,8 @@ export interface TipConfig extends PaymentStatsWithCoords {
 interface SvgMetrics {
   width: number,
   height: number,
-  x: number,
-  y: number,
+  pageX: number,
+  pageY: number,
 }
 
 interface StrokeProps {
@@ -51,12 +52,52 @@ interface StrokeProps {
   strokeLinecap: 'butt' | 'square' | 'round'
 }
 
+interface FillProps {
+  colorGreen: string,
+  colorRed: string,
+  opacity: string,
+}
+
+interface CalcYCoordProps {
+  currentAmount: number,
+  minAmount: number,
+  step: number,
+  maxYCoord: number
+}
+
+interface CalcNextAdditionalCoordsProps {
+  currentX: number,
+  nextX: number,
+  currentAmount: number,
+  nextAmount: number,
+  zeroLineYCoord: number,
+}
+
+interface AddGraphPathsProps {
+  pathsArr: ReactNode[],
+  color: 'colorGreen' | 'colorRed',
+  strokeStr: string,
+  fillStr: string,
+}
+
+interface IsZeroLineNeededProps {
+  currentAmountType: AmountType,
+  isNextAdditionalCoordsNeeded: boolean,
+  isLast: boolean,
+  isPrevCoordsExist: boolean,
+}
+
+interface DrawAndAddZeroLinePathProps {
+  pathsArr: ReactNode[],
+  zeroLineY: number,
+  x1: number,
+  x2: number,
+}
+
 interface PrevAdditionalCoords {
   x: number,
   y: number,
 }
-
-type AmountType = 'negative' | 'positive';
 
 function generateRandomStats(): PaymentStats[] {
   function generateRandomNum(min: number, max: number) {
@@ -141,22 +182,34 @@ export default function PaymentHistory() {
   const [bodyEl, setBodyEl] = useState<HTMLElement | null>(null);
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
-  const [adjustedPaymentStats, setAdjustedPaymentStats] = useState<AdjustedPaymentStats[]>([]);
+  const [formattedPaymentStats, setFormattedPaymentStats] = useState<FormattedPaymentStats[]>([]);
   const [statsWithCoords, setStatsWithCoords] = useState<PaymentStatsWithCoords[]>([]);
   const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
-  const [isTipAndVerticalLineActive, setIsTipAndVerticalLineActive] = useState(false);
+  const [isTipActive, setIsTipActive] = useState(false);
   const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
 
-  const tipId = 'statsTipEl';
+  const TIP_ID = 'statsTipEl';
+
+  const STROKE_PROPS = useMemo<StrokeProps>(() => ({
+    width: '2',
+    colorGreen: '#0AAF60',
+    colorRed: '#FA4545',
+    linejoin: 'round',
+    strokeLinecap: 'round',
+  }), []);
+
+  const FILL_PROPS = useMemo<FillProps>(() => ({
+    colorGreen: 'url(#greenGradient)',
+    colorRed: 'url(#redGradient)',
+    opacity: '0.3',
+  }), []);
 
   const findBody = useCallback(() => {
     const body = document.querySelector('body');
 
     setBodyEl(body);
   }, []);
-
-  useEffect(findBody, [findBody]);
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -167,21 +220,18 @@ export default function PaymentHistory() {
     const height = svgWrapper.offsetHeight;
 
     const { x: windowX, y: windowY } = svgWrapper.getBoundingClientRect();
-    const x = windowX + window.scrollX;
-    const y = windowY + window.scrollY;
+    const pageX = windowX + window.scrollX;
+    const pageY = windowY + window.scrollY;
 
     setSvgMetrics({
       width,
       height,
-      x,
-      y,
+      pageX,
+      pageY,
     });
   }, []);
 
-  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
-  useOnResize(calcSvgMetric);
-
-  const adjustPaymentStats = useCallback(() => {
+  const formatPaymentStats = useCallback(() => {
     const statsObj = paymentStats;
 
     function divideDate(dateStr: string) {
@@ -204,161 +254,150 @@ export default function PaymentHistory() {
       };
     }
 
-    const adjustedPaymentStatsObj: AdjustedPaymentStats[] = [];
+    const newFormattedPaymentStats: FormattedPaymentStats[] = [];
 
     statsObj.forEach((obj) => {
       const dateInfo = divideDate(obj.date);
 
-      adjustedPaymentStatsObj.push({
+      newFormattedPaymentStats.push({
         ...dateInfo,
         amount: Number(obj.amount),
       });
     });
 
-    setAdjustedPaymentStats(adjustedPaymentStatsObj);
+    setFormattedPaymentStats(newFormattedPaymentStats);
+  }, []);
+
+  const calcXCoord = useCallback((indexInArray: number, step: number) => indexInArray * step, []);
+
+  const calcYCoord = useCallback(({
+    currentAmount, minAmount, step, maxYCoord,
+  }: CalcYCoordProps) => Math.abs((currentAmount - minAmount) * step - maxYCoord), []);
+
+  const checkAmountType = useCallback((amount: number) => {
+    const type: AmountType = amount >= 0 ? 'positive' : 'negative';
+    return type;
+  }, []);
+
+  const startPath = useCallback((x: number, y: number) => `M ${x} ${y}`, []);
+
+  const calcNextAdditionalCoords = useCallback(({
+    currentX,
+    nextX,
+    currentAmount,
+    nextAmount,
+    zeroLineYCoord,
+  }: CalcNextAdditionalCoordsProps) => {
+    const ABSAmountSum = Math.abs(currentAmount) + Math.abs(nextAmount);
+    const currentAmountPercent = Math.abs(currentAmount) / ABSAmountSum;
+
+    const additionalCoordX = currentX + (nextX - currentX) * currentAmountPercent;
+    const additionalCoordY = zeroLineYCoord;
+
+    return {
+      x: additionalCoordX,
+      y: additionalCoordY,
+    };
+  }, []);
+
+  const addGraphPaths = useCallback(({
+    pathsArr, color, strokeStr, fillStr,
+  }: AddGraphPathsProps) => {
+    pathsArr.push(
+      <path
+        d={strokeStr}
+        fill="none"
+        strokeWidth={STROKE_PROPS.width}
+        stroke={STROKE_PROPS[color]}
+        strokeLinejoin={STROKE_PROPS.linejoin}
+        strokeLinecap={STROKE_PROPS.strokeLinecap}
+      />,
+      <path
+        d={fillStr}
+        fill={FILL_PROPS[color]}
+        stroke="none"
+        opacity={FILL_PROPS.opacity}
+      />,
+    );
+  }, [STROKE_PROPS, FILL_PROPS]);
+
+  const isZeroLineNeeded = useCallback(({
+    currentAmountType,
+    isNextAdditionalCoordsNeeded,
+    isLast,
+    isPrevCoordsExist,
+  }: IsZeroLineNeededProps) => {
+    if (currentAmountType === 'negative' && (isNextAdditionalCoordsNeeded || (isLast && isPrevCoordsExist))) {
+      return true;
+    }
+
+    return false;
+  }, []);
+
+  const drawAndAddZeroLinePath = useCallback(({
+    pathsArr,
+    zeroLineY,
+    x1,
+    x2,
+  }: DrawAndAddZeroLinePathProps) => {
+    pathsArr.push(
+      <path
+        d={`M ${x1} ${zeroLineY} L ${x2} ${zeroLineY}`}
+        fill="none"
+        strokeWidth="2"
+        stroke="#CACACE"
+        strokeDasharray="5,5"
+      />,
+    );
   }, []);
 
   const paintGraph = useCallback(() => {
     const TOP_INDENT_PX = 60;
     const BOTTOM_INDENT_PERCENT = 0.1;
 
-    const STROKE_PROPS: StrokeProps = {
-      width: '2',
-      colorGreen: '#0AAF60',
-      colorRed: '#FA4545',
-      linejoin: 'round',
-      strokeLinecap: 'round',
-    };
-
-    const FILL_PROPS = {
-      colorGreen: 'url(#greenGradient)',
-      colorRed: 'url(#redGradient)',
-      opacity: '0.3',
-    };
-
-    function calcXCoord(statsArrIndex: number, step: number) {
-      return Number((statsArrIndex * step).toFixed(0));
-    }
-
-    function calcYCoord(amount: number, step: number, minAmount: number, maxYCoord: number) {
-      return Math.abs(Number(((amount - minAmount) * step).toFixed(0)) - maxYCoord);
-    }
-
-    function checkAmountType(amount: number): AmountType {
-      return amount >= 0 ? 'positive' : 'negative';
-    }
-
-    function startPath(x: number, y: number) {
-      return `M ${x} ${y}`;
-    }
-
-    function calcNextAdditionalCoords(
-      currentX: number,
-      nextX: number,
-      currentAmount: number,
-      nextAmount: number,
-      zeroLineYCoord: number,
-    ) {
-      const ABSAmountSum = Math.abs(currentAmount) + Math.abs(nextAmount);
-      const currentAmountPercent = Math.abs(currentAmount) / ABSAmountSum;
-
-      const additionalCoordX = currentX + (nextX - currentX) * currentAmountPercent;
-      const additionalCoordY = zeroLineYCoord;
-
-      return {
-        x: additionalCoordX,
-        y: additionalCoordY,
-      };
-    }
-
-    function addGraphPaths(
-      pathsArr: ReactNode[],
-      color: 'colorGreen' | 'colorRed',
-      strokeStr: string,
-      fillStr: string,
-    ) {
-      pathsArr.push(
-        <path
-          d={strokeStr}
-          fill="none"
-          strokeWidth={STROKE_PROPS.width}
-          stroke={STROKE_PROPS[color]}
-          strokeLinejoin={STROKE_PROPS.linejoin}
-          strokeLinecap={STROKE_PROPS.strokeLinecap}
-        />,
-        <path
-          d={fillStr}
-          fill={FILL_PROPS[color]}
-          stroke="none"
-          opacity={FILL_PROPS.opacity}
-        />,
-      );
-    }
-
-    function isZeroLineNeeded(
-      currentAmountType: AmountType,
-      isNextAdditionalCoordsNeeded: boolean,
-      isLast: boolean,
-      isPrevCoordsExist: boolean,
-    ) {
-      if (currentAmountType === 'negative' && (isNextAdditionalCoordsNeeded || (isLast && isPrevCoordsExist))) {
-        return true;
-      }
-
-      return false;
-    }
-
-    function drawAndAddZeroLinePath(
-      pathsArr: ReactNode[],
-      zeroLineY: number,
-      x1: number,
-      x2: number,
-    ) {
-      pathsArr.push(
-        <path
-          d={`M ${x1} ${zeroLineY} L ${x2} ${zeroLineY}`}
-          fill="none"
-          strokeWidth="2"
-          stroke="#CACACE"
-          strokeDasharray="5,5"
-        />,
-      );
-    }
-
-    const svgWrapper = svgWrapperRef.current;
     const svgEl = svgRef.current;
 
-    if (!svgEl || !svgWrapper) return;
+    if (!svgEl || !svgMetrics) return;
 
-    const svgWidth = svgWrapper.offsetWidth;
-    const svgHeight = svgWrapper.offsetHeight;
+    const svgWidth = svgMetrics.width;
+    const svgHeight = svgMetrics.height;
 
     svgEl.setAttribute('width', String(svgWidth));
     svgEl.setAttribute('height', String(svgHeight));
 
-    const paths: ReactNode[] = [];
-
-    const allAmounts = adjustedPaymentStats.map((p) => p.amount);
+    const allAmounts = formattedPaymentStats.map((p) => p.amount);
     const minAmount = Math.min(...allAmounts);
     const maxAmount = Math.max(...allAmounts);
 
-    const daysAmount = adjustedPaymentStats.length;
+    const daysAmount = formattedPaymentStats.length;
+
     const minYCoord = TOP_INDENT_PX;
-    const maxYCoord = Number((svgHeight * (1 - BOTTOM_INDENT_PERCENT)).toFixed(0));
+    const maxYCoord = svgHeight * (1 - BOTTOM_INDENT_PERCENT);
+    const minXCoord = 0;
+    const maxXCoord = svgWidth;
 
-    const XStep = Number((svgWidth / (daysAmount - 1)).toFixed(5));
-    const YStep = Number(((maxYCoord - minYCoord) / (maxAmount - minAmount)).toFixed(5));
+    const XStep = (maxXCoord - minXCoord) / (daysAmount - 1);
+    const YStep = (maxYCoord - minYCoord) / (maxAmount - minAmount);
 
-    const zeroLineYCoord = calcYCoord(0, YStep, minAmount, maxYCoord);
+    const zeroLineYCoord = calcYCoord({
+      currentAmount: 0,
+      minAmount,
+      step: YStep,
+      maxYCoord,
+    });
 
-    const paymentStatsWithCoords: PaymentStatsWithCoords[] = adjustedPaymentStats.map((p, i) => ({
+    const paymentStatsWithCoords: PaymentStatsWithCoords[] = formattedPaymentStats.map((p, i) => ({
       ...p,
       x: calcXCoord(i, XStep),
-      y: calcYCoord(p.amount, YStep, minAmount, maxYCoord),
+      y: calcYCoord({
+        currentAmount: p.amount,
+        minAmount,
+        step: YStep,
+        maxYCoord,
+      }),
     }));
 
-    setStatsWithCoords(paymentStatsWithCoords);
-
+    const paths: ReactNode[] = [];
     let dStrokeStr: string;
     let prevAdditionalCoords: PrevAdditionalCoords;
 
@@ -381,27 +420,37 @@ export default function PaymentHistory() {
         if (isNextAdditionalCoordsNeeded) {
           const { x: nextX } = paymentStatsWithCoords[i + 1];
 
-          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords(
+          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords({
             currentX,
             nextX,
-            currenStatsAmount,
-            nextStatsAmount,
+            currentAmount: currenStatsAmount,
+            nextAmount: nextStatsAmount,
             zeroLineYCoord,
-          );
+          });
 
           dStrokeStr += ` L ${additionalCoordX} ${additionalCoordY}`;
-          const dFillStr = `${dStrokeStr} L 0 ${zeroLineYCoord} Z`;
+          const dFillStr = `${dStrokeStr} L ${minXCoord} ${zeroLineYCoord} Z`;
 
-          if (isZeroLineNeeded(
+          if (isZeroLineNeeded({
             currentAmountType,
             isNextAdditionalCoordsNeeded,
-            false,
-            !!prevAdditionalCoords,
-          )) {
-            drawAndAddZeroLinePath(paths, zeroLineYCoord, 0, additionalCoordX);
+            isLast: false,
+            isPrevCoordsExist: !!prevAdditionalCoords,
+          })) {
+            drawAndAddZeroLinePath({
+              pathsArr: paths,
+              zeroLineY: zeroLineYCoord,
+              x1: minXCoord,
+              x2: additionalCoordX,
+            });
           }
 
-          addGraphPaths(paths, color, dStrokeStr, dFillStr);
+          addGraphPaths({
+            pathsArr: paths,
+            color,
+            strokeStr: dStrokeStr,
+            fillStr: dFillStr,
+          });
 
           prevAdditionalCoords = {
             x: additionalCoordX,
@@ -418,24 +467,34 @@ export default function PaymentHistory() {
         }
 
         dStrokeStr += ` L ${currentX} ${currentY}`;
-        let dFillStr = `${dStrokeStr} ${svgWidth} ${zeroLineYCoord}`;
+        let dFillStr = `${dStrokeStr} ${maxXCoord} ${zeroLineYCoord}`;
 
         if (isPrevAdditionalCoordsUsed) {
           dFillStr += ' Z';
         } else {
-          dFillStr += `L 0 ${zeroLineYCoord} Z`;
+          dFillStr += `L ${minXCoord} ${zeroLineYCoord} Z`;
         }
 
-        if (isZeroLineNeeded(
+        if (isZeroLineNeeded({
           currentAmountType,
           isNextAdditionalCoordsNeeded,
-          true,
-          !!prevAdditionalCoords,
-        )) {
-          drawAndAddZeroLinePath(paths, zeroLineYCoord, prevAdditionalCoords.x, svgWidth);
+          isLast: true,
+          isPrevCoordsExist: !!prevAdditionalCoords,
+        })) {
+          drawAndAddZeroLinePath({
+            pathsArr: paths,
+            zeroLineY: zeroLineYCoord,
+            x1: prevAdditionalCoords.x,
+            x2: maxXCoord,
+          });
         }
 
-        addGraphPaths(paths, color, dStrokeStr, dFillStr);
+        addGraphPaths({
+          pathsArr: paths,
+          color,
+          strokeStr: dStrokeStr,
+          fillStr: dFillStr,
+        });
       } else {
         const prevAmountType = checkAmountType(prevStatsAmount);
         const nextAmountType = checkAmountType(nextStatsAmount);
@@ -451,38 +510,43 @@ export default function PaymentHistory() {
         if (isNextAdditionalCoordsNeeded) {
           const { x: nextX } = paymentStatsWithCoords[i + 1];
 
-          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords(
+          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords({
             currentX,
             nextX,
-            currenStatsAmount,
-            nextStatsAmount,
+            currentAmount: currenStatsAmount,
+            nextAmount: nextStatsAmount,
             zeroLineYCoord,
-          );
+          });
 
           dStrokeStr += ` L ${additionalCoordX} ${additionalCoordY}`;
           let dFillStr = dStrokeStr;
 
           if (!prevAdditionalCoords) {
-            dFillStr += ` L 0 ${zeroLineYCoord} Z`;
+            dFillStr += ` L ${minXCoord} ${zeroLineYCoord} Z`;
           } else {
             dFillStr += ' Z';
           }
 
-          if (isZeroLineNeeded(
+          if (isZeroLineNeeded({
             currentAmountType,
             isNextAdditionalCoordsNeeded,
-            false,
-            !!prevAdditionalCoords,
-          )) {
-            drawAndAddZeroLinePath(
-              paths,
-              zeroLineYCoord,
-              prevAdditionalCoords?.x || 0,
-              additionalCoordX,
-            );
+            isLast: false,
+            isPrevCoordsExist: !!prevAdditionalCoords,
+          })) {
+            drawAndAddZeroLinePath({
+              pathsArr: paths,
+              zeroLineY: zeroLineYCoord,
+              x1: prevAdditionalCoords?.x || minXCoord,
+              x2: additionalCoordX,
+            });
           }
 
-          addGraphPaths(paths, color, dStrokeStr, dFillStr);
+          addGraphPaths({
+            pathsArr: paths,
+            color,
+            strokeStr: dStrokeStr,
+            fillStr: dFillStr,
+          });
 
           prevAdditionalCoords = {
             x: additionalCoordX,
@@ -492,21 +556,21 @@ export default function PaymentHistory() {
       }
     });
 
+    setStatsWithCoords(paymentStatsWithCoords);
     setSvgPaths(paths);
-  }, [adjustedPaymentStats]);
-
-  useEffect(adjustPaymentStats, [adjustPaymentStats]);
-  useEffect(paintGraph, [paintGraph]);
+  }, [addGraphPaths, calcNextAdditionalCoords, calcXCoord, calcYCoord, svgMetrics,
+    checkAmountType, drawAndAddZeroLinePath, formattedPaymentStats, isZeroLineNeeded, startPath]);
 
   const onGraphHover = useCallback((e: MouseEventInit) => {
-    const clientX = e.clientX || -1;
-    const clientY = e.clientY || -1;
+    const { clientX, clientY } = e;
+
+    if (!clientX || !clientY) return;
 
     const elemBelow = document.elementFromPoint(clientX, clientY);
-    const graphAndDatesElement = elemBelow?.closest('#graphAndDatesBlock') || elemBelow?.closest(`#${tipId}`);
+    const graphAndDatesElement = elemBelow?.closest('#graphAndDatesBlock') || elemBelow?.closest(`#${TIP_ID}`);
 
     if (graphAndDatesElement && svgMetrics) {
-      const currentSvgX = clientX - svgMetrics.x;
+      const currentSvgX = clientX - svgMetrics.pageX;
       let currentHoveredStats: PaymentStatsWithCoords | undefined;
 
       for (let i = 0; i < statsWithCoords.length; i += 1) {
@@ -522,16 +586,16 @@ export default function PaymentHistory() {
 
       const newTipConfig = {
         ...currentHoveredStats,
-        svgElX: svgMetrics.x,
-        svgElY: svgMetrics.y,
-        id: tipId,
+        svgElX: svgMetrics.pageX,
+        svgElY: svgMetrics.pageY,
+        id: TIP_ID,
       };
 
       setTipConfig(newTipConfig);
-      setVerticalLineDStroke(`M ${currentHoveredStats.x || 0} 0 L ${currentHoveredStats.x || 0} ${verticalLineBottomY}`);
-      setIsTipAndVerticalLineActive(true);
+      setVerticalLineDStroke(`M ${currentHoveredStats.x} 0 L ${currentHoveredStats.x} ${verticalLineBottomY}`);
+      setIsTipActive(true);
     } else {
-      setIsTipAndVerticalLineActive(false);
+      setIsTipActive(false);
     }
   }, [statsWithCoords, svgMetrics]);
 
@@ -543,6 +607,11 @@ export default function PaymentHistory() {
     };
   }, [onGraphHover]);
 
+  useLayoutEffect(findBody, [findBody]);
+  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
+  useOnResize(calcSvgMetric);
+  useEffect(formatPaymentStats, [formatPaymentStats]);
+  useEffect(paintGraph, [paintGraph]);
   useEffect(addGraphHoverListener, [addGraphHoverListener]);
 
   return (
@@ -607,7 +676,7 @@ export default function PaymentHistory() {
       >
         {bodyEl && createPortal(
           <CurrentStatsTip
-            isActive={isTipAndVerticalLineActive}
+            isActive={isTipActive}
             tipConfig={tipConfig}
           />,
           document.body,
@@ -633,7 +702,7 @@ export default function PaymentHistory() {
               </linearGradient>
             </defs>
             {...svgPaths}
-            {isTipAndVerticalLineActive && (
+            {isTipActive && (
               <path
                 d={verticalLineDStroke}
                 fill="none"
