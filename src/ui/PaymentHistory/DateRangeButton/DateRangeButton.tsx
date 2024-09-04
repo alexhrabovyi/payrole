@@ -1,10 +1,11 @@
 import { Dispatch, SetStateAction } from 'react';
 import clsx from 'clsx';
+import { ActiveDateRange } from '../PaymentHistory';
 
 interface ButtonProps {
-  dateBtnType: string,
-  activeButton: string,
-  setActiveButton: Dispatch<SetStateAction<string>>,
+  dateBtnType: ActiveDateRange,
+  activeButton: ActiveDateRange,
+  setActiveButton: Dispatch<SetStateAction<ActiveDateRange>>,
   children: React.ReactNode,
 }
 

@@ -8,10 +8,15 @@ import { createPortal } from 'react-dom';
 
 import useOnResize from '@/hooks/useOnResize';
 import Badge from '@/ui/Badge/Badge';
+import formatAmount from '@/libs/formatAmount';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 import CurrentStatsTip from './CurrentStatsTip/CurrentStatsTip';
 
 type AmountType = 'negative' | 'positive';
+
+export type ActiveDateRange = '1M' | '3M' | '6M' | '1Y';
+
+type VersusText = 'vs last month' | 'vs last 3 months' | 'vs last 6 months' | 'vs last year';
 
 interface PaymentStats {
   date: string,
@@ -95,6 +100,11 @@ interface DrawAndAddZeroLinePathProps {
   x2: number,
 }
 
+interface FormattedTotalAmount {
+  integer: string,
+  float: string,
+}
+
 interface PrevAdditionalCoords {
   x: number,
   y: number,
@@ -102,7 +112,7 @@ interface PrevAdditionalCoords {
 
 function generateRandomStats(): PaymentStats[] {
   function generateRandomNum(min: number, max: number) {
-    return (Math.random() * (max - min + 1) + min).toFixed(0);
+    return (Math.random() * (max - min + 1) + min).toFixed(2);
   }
 
   function createStatsObj(amount: string, year: number, month: number, day: number): PaymentStats {
@@ -120,28 +130,17 @@ function generateRandomStats(): PaymentStats[] {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const currentMonthFirstDay = new Date(currentYear, currentMonth, 1).getDate();
-
-  const monthAgoDate = new Date(currentYear, currentMonth, currentDay - 32);
-  const monthAgoDay = monthAgoDate.getDate();
-  const monthAgoMonth = monthAgoDate.getMonth();
-  const monthAgoYear = monthAgoDate.getFullYear();
-
-  const prevMonthMaxDay = new Date(currentYear, currentMonth, 0).getDate();
-
   const arrOfPaymentStats: PaymentStats[] = [];
 
-  for (let i = monthAgoDay; i <= prevMonthMaxDay; i += 1) {
+  for (let i = 365; i >= 0; i -= 1) {
     const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
 
-    const statsObj = createStatsObj(randomNum, monthAgoYear, monthAgoMonth, i);
-    arrOfPaymentStats.push(statsObj);
-  }
+    const prevDate = new Date(currentYear, currentMonth, currentDay - i);
+    const prevDay = prevDate.getDate();
+    const prevMonth = prevDate.getMonth();
+    const prevYear = prevDate.getFullYear();
 
-  for (let i = currentMonthFirstDay; i <= currentDay; i += 1) {
-    const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
-
-    const statsObj = createStatsObj(randomNum, currentYear, currentMonth, i);
+    const statsObj = createStatsObj(randomNum, prevYear, prevMonth, prevDay);
     arrOfPaymentStats.push(statsObj);
   }
 
@@ -181,11 +180,16 @@ export default function PaymentHistory() {
   const svgRef = useRef<null | SVGSVGElement>(null);
 
   const [bodyEl, setBodyEl] = useState<HTMLElement | null>(null);
-  const [activeDateRangeBtn, setActiveDateRangeBtn] = useState('1M');
+  const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [formattedPaymentStats, setFormattedPaymentStats] = useState<FormattedPaymentStats[]>([]);
+  const [currentPaymentStats, setCurrentPaymentStats] = useState<FormattedPaymentStats[]>([]);
   const [statsWithCoords, setStatsWithCoords] = useState<PaymentStatsWithCoords[]>([]);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [formattedTotalAmount, setFormattedTotalAmount] = useState<FormattedTotalAmount>({ integer: '0', float: '' });
+  const [versusText, setVersusText] = useState<VersusText>('vs last month');
   const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
+  const [dateElems, setDateElems] = useState<ReactNode[]>([]);
   const [isTipActive, setIsTipActive] = useState(false);
   const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
@@ -232,7 +236,7 @@ export default function PaymentHistory() {
     });
   }, []);
 
-  const formatPaymentStats = useCallback(() => {
+  const formatAllPaymentStats = useCallback(() => {
     const statsObj = paymentStats;
 
     function divideDate(dateStr: string) {
@@ -257,17 +261,74 @@ export default function PaymentHistory() {
 
     const newFormattedPaymentStats: FormattedPaymentStats[] = [];
 
-    statsObj.forEach((obj) => {
-      const dateInfo = divideDate(obj.date);
+    statsObj.forEach((s) => {
+      const dateInfo = divideDate(s.date);
 
       newFormattedPaymentStats.push({
         ...dateInfo,
-        amount: Number(obj.amount),
+        amount: Number(s.amount),
       });
     });
 
     setFormattedPaymentStats(newFormattedPaymentStats);
   }, []);
+
+  const extractCurrentPaymentStats = useCallback(() => {
+    let startIndex = 0;
+    const endIndex = formattedPaymentStats.length;
+
+    if (activeDateRangeBtn === '1M') {
+      startIndex = formattedPaymentStats.length - 32;
+    } else if (activeDateRangeBtn === '3M') {
+      startIndex = formattedPaymentStats.length - 94;
+    } else if (activeDateRangeBtn === '6M') {
+      startIndex = formattedPaymentStats.length - 187;
+    } else if (activeDateRangeBtn === '1Y') {
+      startIndex = 0;
+    }
+
+    const newCurrentPaymentStats = formattedPaymentStats.slice(startIndex, endIndex);
+
+    setCurrentPaymentStats(newCurrentPaymentStats);
+  }, [formattedPaymentStats, activeDateRangeBtn]);
+
+  const calcTotalAmount = useCallback(() => {
+    const currenttotalAmount = currentPaymentStats.slice(1).reduce((t, c) => t += c.amount, 0);
+
+    setTotalAmount(currenttotalAmount);
+  }, [currentPaymentStats]);
+
+  const formatTotalAmount = useCallback(() => {
+    const newFormattedTotalAmount = formatAmount(totalAmount);
+    const integer = `$${newFormattedTotalAmount.match(/(\d+,)?(\d+)/)![0]}`;
+    const float = newFormattedTotalAmount.match(/\.\d\d/)?.[0] || '';
+
+    setFormattedTotalAmount({
+      integer,
+      float,
+    });
+  }, [totalAmount]);
+
+  const setupVersusText = useCallback(() => {
+    let newVersusText: VersusText;
+
+    switch (activeDateRangeBtn) {
+      case '1M':
+        newVersusText = 'vs last month';
+        break;
+      case '3M':
+        newVersusText = 'vs last 3 months';
+        break;
+      case '6M':
+        newVersusText = 'vs last 6 months';
+        break;
+      case '1Y':
+        newVersusText = 'vs last year';
+        break;
+    }
+
+    setVersusText(newVersusText);
+  }, [activeDateRangeBtn]);
 
   const calcXCoord = useCallback((indexInArray: number, step: number) => indexInArray * step, []);
 
@@ -366,11 +427,11 @@ export default function PaymentHistory() {
     svgEl.setAttribute('width', String(svgWidth));
     svgEl.setAttribute('height', String(svgHeight));
 
-    const allAmounts = formattedPaymentStats.map((p) => p.amount);
+    const allAmounts = currentPaymentStats.map((p) => p.amount);
     const minAmount = Math.min(...allAmounts);
     const maxAmount = Math.max(...allAmounts);
 
-    const daysAmount = formattedPaymentStats.length;
+    const daysAmount = currentPaymentStats.length;
 
     const minYCoord = TOP_INDENT_PX;
     const maxYCoord = svgHeight * (1 - BOTTOM_INDENT_PERCENT);
@@ -387,7 +448,7 @@ export default function PaymentHistory() {
       maxYCoord,
     });
 
-    const paymentStatsWithCoords: PaymentStatsWithCoords[] = formattedPaymentStats.map((p, i) => ({
+    const paymentStatsWithCoords: PaymentStatsWithCoords[] = currentPaymentStats.map((p, i) => ({
       ...p,
       x: calcXCoord(i, XStep),
       y: calcYCoord({
@@ -560,7 +621,47 @@ export default function PaymentHistory() {
     setStatsWithCoords(paymentStatsWithCoords);
     setSvgPaths(paths);
   }, [addGraphPaths, calcNextAdditionalCoords, calcXCoord, calcYCoord, svgMetrics,
-    checkAmountType, drawAndAddZeroLinePath, formattedPaymentStats, isZeroLineNeeded, startPath]);
+    checkAmountType, drawAndAddZeroLinePath, currentPaymentStats, isZeroLineNeeded, startPath]);
+
+  const renderDates = useCallback(() => {
+    const periodStartObjs: PaymentStatsWithCoords[] = [];
+
+    if (activeDateRangeBtn === '1M') {
+      for (let i = 1; i < statsWithCoords.length - 2; i += 4) {
+        periodStartObjs.push(statsWithCoords[i]);
+      }
+    } else if (activeDateRangeBtn === '3M') {
+      for (let i = 3; i < statsWithCoords.length - 3; i += 7) {
+        periodStartObjs.push(statsWithCoords[i]);
+      }
+    } else if (activeDateRangeBtn === '6M') {
+      for (let i = 5; i < statsWithCoords.length - 3; i += 14) {
+        periodStartObjs.push(statsWithCoords[i]);
+      }
+    } else if (activeDateRangeBtn === '1Y') {
+      for (let i = 12; i < statsWithCoords.length - 3; i += 28) {
+        periodStartObjs.push(statsWithCoords[i]);
+      }
+    }
+
+    const pElms = periodStartObjs.map((m) => {
+      const text = `${m.month} ${m.day}`;
+
+      return (
+        <p
+          key={m.x}
+          className="absolute top-0 translate-x-[-50%]"
+          style={{
+            left: `${m.x}px`,
+          }}
+        >
+          {text}
+        </p>
+      );
+    });
+
+    setDateElems(pElms);
+  }, [activeDateRangeBtn, statsWithCoords]);
 
   const onGraphAndDatesHover = useCallback((e: MouseEventInit) => {
     const { clientX, clientY } = e;
@@ -613,10 +714,15 @@ export default function PaymentHistory() {
   }, [onGraphAndDatesHover]);
 
   useLayoutEffect(findBody, [findBody]);
-  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
+  useEffect(calcSvgMetric, [calcSvgMetric]);
   useOnResize(calcSvgMetric);
-  useEffect(formatPaymentStats, [formatPaymentStats]);
+  useEffect(formatAllPaymentStats, [formatAllPaymentStats]);
+  useEffect(extractCurrentPaymentStats, [extractCurrentPaymentStats]);
+  useEffect(calcTotalAmount, [calcTotalAmount]);
+  useEffect(setupVersusText, [setupVersusText]);
+  useEffect(formatTotalAmount, [formatTotalAmount]);
   useEffect(paintGraph, [paintGraph]);
+  useEffect(renderDates, [renderDates]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -658,9 +764,9 @@ export default function PaymentHistory() {
         </div>
         <div className="flex flex-col justify-start items-start gap-[10px]">
           <p className="font-tthoves font-medium text-[42px] text-darkBlue">
-            $12,135
+            {formattedTotalAmount.integer}
             <span className="text-[32px] text-grey-400">
-              .69
+              {formattedTotalAmount.float}
             </span>
           </p>
           <div className="flex justify-start items-center gap-[8px]">
@@ -668,7 +774,7 @@ export default function PaymentHistory() {
               +23%
             </Badge>
             <p className="font-tthoves text-[14px] text-grey-400">
-              vs last month
+              {versusText}
             </p>
           </div>
         </div>
@@ -719,14 +825,8 @@ export default function PaymentHistory() {
             )}
           </svg>
         </div>
-        <div className="w-full px-[24px] pb-[24px] flex justify-between items-center
-          font-tthoves text-[14px] text-grey-400"
-        >
-          <p>Feb 1</p>
-          <p>Feb 7</p>
-          <p>Feb 14</p>
-          <p>Feb 21</p>
-          <p>Feb 28</p>
+        <div className="relative w-full h-[45px] px-[24px] pb-[24px] font-tthoves text-[14px] text-grey-400">
+          {...dateElems}
         </div>
       </div>
     </div>
