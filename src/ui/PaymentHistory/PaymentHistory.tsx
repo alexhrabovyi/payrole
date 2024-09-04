@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  MouseEventHandler,
   ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -561,58 +562,61 @@ export default function PaymentHistory() {
   }, [addGraphPaths, calcNextAdditionalCoords, calcXCoord, calcYCoord, svgMetrics,
     checkAmountType, drawAndAddZeroLinePath, formattedPaymentStats, isZeroLineNeeded, startPath]);
 
-  const onGraphHover = useCallback((e: MouseEventInit) => {
+  const onGraphAndDatesHover = useCallback((e: MouseEventInit) => {
     const { clientX, clientY } = e;
 
-    if (!clientX || !clientY) return;
+    if (!clientX || !clientY || !svgMetrics) return;
 
-    const elemBelow = document.elementFromPoint(clientX, clientY);
-    const graphAndDatesElement = elemBelow?.closest('#graphAndDatesBlock') || elemBelow?.closest(`#${TIP_ID}`);
+    const currentSvgX = clientX - svgMetrics.pageX;
+    let currentHoveredStats: PaymentStatsWithCoords | undefined;
 
-    if (graphAndDatesElement && svgMetrics) {
-      const currentSvgX = clientX - svgMetrics.pageX;
-      let currentHoveredStats: PaymentStatsWithCoords | undefined;
-
-      for (let i = 0; i < statsWithCoords.length; i += 1) {
-        if (currentSvgX <= statsWithCoords[i].x) {
-          currentHoveredStats = statsWithCoords[i];
-          break;
-        }
+    for (let i = 1; i < statsWithCoords.length; i += 1) {
+      if (currentSvgX <= statsWithCoords[i].x) {
+        currentHoveredStats = statsWithCoords[i];
+        break;
       }
-
-      if (!currentHoveredStats) return;
-
-      const verticalLineBottomY = svgMetrics.height;
-
-      const newTipConfig = {
-        ...currentHoveredStats,
-        svgElX: svgMetrics.pageX,
-        svgElY: svgMetrics.pageY,
-        id: TIP_ID,
-      };
-
-      setTipConfig(newTipConfig);
-      setVerticalLineDStroke(`M ${currentHoveredStats.x} 0 L ${currentHoveredStats.x} ${verticalLineBottomY}`);
-      setIsTipActive(true);
-    } else {
-      setIsTipActive(false);
     }
+
+    if (!currentHoveredStats) return;
+
+    const verticalLineBottomY = svgMetrics.height;
+
+    const newTipConfig = {
+      ...currentHoveredStats,
+      svgElX: svgMetrics.pageX,
+      svgElY: svgMetrics.pageY,
+      id: TIP_ID,
+    };
+
+    setTipConfig(newTipConfig);
+    setVerticalLineDStroke(`M ${currentHoveredStats.x} 0 L ${currentHoveredStats.x} ${verticalLineBottomY}`);
   }, [statsWithCoords, svgMetrics]);
 
-  const addGraphHoverListener = useCallback(() => {
-    document.addEventListener('mousemove', onGraphHover);
+  const onGraphAndDatesOut = useCallback((e: MouseEvent) => {
+    const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock')
+      || (e.relatedTarget as HTMLElement | null)?.closest(`#${TIP_ID}`);
 
-    return () => {
-      document.removeEventListener('mousemove', onGraphHover);
-    };
-  }, [onGraphHover]);
+    if (!nextElem) {
+      setIsTipActive(false);
+      document.removeEventListener('mousemove', onGraphAndDatesHover);
+    }
+  }, [onGraphAndDatesHover]);
+
+  const onGraphAndDatesOver = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
+    const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock')
+      || (e.relatedTarget as HTMLElement | null)?.closest(`#${TIP_ID}`);
+
+    if (prevElem) return;
+
+    setIsTipActive(true);
+    document.addEventListener('mousemove', onGraphAndDatesHover);
+  }, [onGraphAndDatesHover]);
 
   useLayoutEffect(findBody, [findBody]);
   useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
   useOnResize(calcSvgMetric);
   useEffect(formatPaymentStats, [formatPaymentStats]);
   useEffect(paintGraph, [paintGraph]);
-  useEffect(addGraphHoverListener, [addGraphHoverListener]);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -673,6 +677,8 @@ export default function PaymentHistory() {
         id="graphAndDatesBlock"
         ref={graphAndDatesRef}
         className="w-full h-full flex flex-col justify-start items-start gap-[16px]"
+        onMouseOver={onGraphAndDatesOver}
+        onMouseOut={onGraphAndDatesOut}
       >
         {bodyEl && createPortal(
           <CurrentStatsTip
