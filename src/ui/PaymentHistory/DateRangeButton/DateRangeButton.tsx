@@ -20,7 +20,7 @@ const DateRangeButton: React.FC<ButtonProps> = ({
   const btnInactiveClassName = 'text-grey-500 hover:text-blue active:text-blue-active border-transparent';
   const btnActiveClassName = 'bg-grey-100 border-grey-200 font-medium text-darkBlue';
 
-  const ariaLabelText: Record<string, string> = {
+  const ariaLabelText: Record<ActiveDateRange, string> = {
     '1M': 'Show payment history chart for the last month',
     '3M': 'Show payment history chart for the last three months',
     '6M': 'Show payment history chart for the last half a year',

@@ -1,8 +1,7 @@
 'use client';
 
 import {
-  MouseEventHandler,
-  ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+  MouseEventHandler, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -67,7 +66,7 @@ interface FillProps {
 interface CalcYCoordProps {
   currentAmount: number,
   minAmount: number,
-  step: number,
+  Ystep: number,
   maxYCoord: number
 }
 
@@ -80,7 +79,7 @@ interface CalcNextAdditionalCoordsProps {
 }
 
 interface AddGraphPathsProps {
-  pathsArr: ReactNode[],
+  pathsArr: React.ReactNode[],
   color: 'colorGreen' | 'colorRed',
   strokeStr: string,
   fillStr: string,
@@ -94,7 +93,7 @@ interface IsZeroLineNeededProps {
 }
 
 interface DrawAndAddZeroLinePathProps {
-  pathsArr: ReactNode[],
+  pathsArr: React.ReactNode[],
   zeroLineY: number,
   x1: number,
   x2: number,
@@ -188,8 +187,8 @@ export default function PaymentHistory() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [formattedTotalAmount, setFormattedTotalAmount] = useState<FormattedTotalAmount>({ integer: '0', float: '' });
   const [versusText, setVersusText] = useState<VersusText>('vs last month');
-  const [svgPaths, setSvgPaths] = useState<ReactNode[]>([]);
-  const [dateElems, setDateElems] = useState<ReactNode[]>([]);
+  const [svgPaths, setSvgPaths] = useState<React.ReactNode[]>([]);
+  const [dateElems, setDateElems] = useState<React.ReactNode[]>([]);
   const [isTipActive, setIsTipActive] = useState(false);
   const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
@@ -278,11 +277,11 @@ export default function PaymentHistory() {
     const endIndex = formattedPaymentStats.length;
 
     if (activeDateRangeBtn === '1M') {
-      startIndex = formattedPaymentStats.length - 32;
+      startIndex = endIndex - 32;
     } else if (activeDateRangeBtn === '3M') {
-      startIndex = formattedPaymentStats.length - 94;
+      startIndex = endIndex - 94;
     } else if (activeDateRangeBtn === '6M') {
-      startIndex = formattedPaymentStats.length - 187;
+      startIndex = endIndex - 187;
     } else if (activeDateRangeBtn === '1Y') {
       startIndex = 0;
     }
@@ -330,11 +329,11 @@ export default function PaymentHistory() {
     setVersusText(newVersusText);
   }, [activeDateRangeBtn]);
 
-  const calcXCoord = useCallback((indexInArray: number, step: number) => indexInArray * step, []);
+  const calcXCoord = useCallback((indexInArray: number, Xstep: number) => indexInArray * Xstep, []);
 
   const calcYCoord = useCallback(({
-    currentAmount, minAmount, step, maxYCoord,
-  }: CalcYCoordProps) => Math.abs((currentAmount - minAmount) * step - maxYCoord), []);
+    currentAmount, minAmount, Ystep, maxYCoord,
+  }: CalcYCoordProps) => Math.abs((currentAmount - minAmount) * Ystep - maxYCoord), []);
 
   const checkAmountType = useCallback((amount: number) => {
     const type: AmountType = amount >= 0 ? 'positive' : 'negative';
@@ -444,7 +443,7 @@ export default function PaymentHistory() {
     const zeroLineYCoord = calcYCoord({
       currentAmount: 0,
       minAmount,
-      step: YStep,
+      Ystep: YStep,
       maxYCoord,
     });
 
@@ -454,12 +453,12 @@ export default function PaymentHistory() {
       y: calcYCoord({
         currentAmount: p.amount,
         minAmount,
-        step: YStep,
+        Ystep: YStep,
         maxYCoord,
       }),
     }));
 
-    const paths: ReactNode[] = [];
+    const paths: React.ReactNode[] = [];
     let dStrokeStr: string;
     let prevAdditionalCoords: PrevAdditionalCoords;
 
@@ -521,20 +520,20 @@ export default function PaymentHistory() {
         }
       } else if (i === daysAmount - 1) {
         const prevAmountType = checkAmountType(prevStatsAmount);
-        const isPrevAdditionalCoordsUsed = prevAmountType !== currentAmountType;
+        const isPrevAdditionalCoordsUsed = !!prevAdditionalCoords;
         const isNextAdditionalCoordsNeeded = false;
 
-        if (isPrevAdditionalCoordsUsed) {
+        if (prevAmountType !== currentAmountType) {
           dStrokeStr = startPath(prevAdditionalCoords.x, prevAdditionalCoords.y);
         }
 
         dStrokeStr += ` L ${currentX} ${currentY}`;
-        let dFillStr = `${dStrokeStr} ${maxXCoord} ${zeroLineYCoord}`;
+        let dFillStr = `${dStrokeStr} L ${maxXCoord} ${zeroLineYCoord}`;
 
         if (isPrevAdditionalCoordsUsed) {
           dFillStr += ' Z';
         } else {
-          dFillStr += `L ${minXCoord} ${zeroLineYCoord} Z`;
+          dFillStr += ` L ${minXCoord} ${zeroLineYCoord} Z`;
         }
 
         if (isZeroLineNeeded({
@@ -714,13 +713,13 @@ export default function PaymentHistory() {
   }, [onGraphAndDatesHover]);
 
   useLayoutEffect(findBody, [findBody]);
-  useEffect(calcSvgMetric, [calcSvgMetric]);
+  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
   useOnResize(calcSvgMetric);
   useEffect(formatAllPaymentStats, [formatAllPaymentStats]);
   useEffect(extractCurrentPaymentStats, [extractCurrentPaymentStats]);
   useEffect(calcTotalAmount, [calcTotalAmount]);
-  useEffect(setupVersusText, [setupVersusText]);
   useEffect(formatTotalAmount, [formatTotalAmount]);
+  useEffect(setupVersusText, [setupVersusText]);
   useEffect(paintGraph, [paintGraph]);
   useEffect(renderDates, [renderDates]);
 
@@ -791,7 +790,7 @@ export default function PaymentHistory() {
             isActive={isTipActive}
             tipConfig={tipConfig}
           />,
-          document.body,
+          bodyEl,
         )}
         <div
           ref={svgWrapperRef}
@@ -832,3 +831,7 @@ export default function PaymentHistory() {
     </div>
   );
 }
+
+// посмотреть useState, не все из них нужны, возможно, лучше использовать мемо иногда
+// посмотреть useState в StatsTip
+// посмотреть типы ивентов mouseOver / mouseOut, взять реактовские
