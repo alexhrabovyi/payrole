@@ -13,7 +13,9 @@ interface StatsTipProps {
 }
 
 interface TipMetrics {
+  tipWidth: number,
   tipHeight: number,
+  circleWidth: number,
   circleHeight: number,
 }
 
@@ -21,10 +23,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
   const tipRef = useRef<HTMLDivElement | null>(null);
   const circleSpanRef = useRef<HTMLSpanElement | null>(null);
 
-  const [tipMetrics, setTipMetrics] = useState<TipMetrics>({
-    tipHeight: 0,
-    circleHeight: 0,
-  });
+  const [tipMetrics, setTipMetrics] = useState<TipMetrics | null>(null);
 
   const calcTipMetrics = useCallback(() => {
     const tip = tipRef.current;
@@ -32,11 +31,16 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
 
     if (!tip || !circleSpan) return;
 
+    const tipWidth = tip.offsetWidth;
     const tipHeight = tip.offsetHeight;
+
+    const circleWidth = circleSpan.offsetWidth;
     const circleHeight = circleSpan.offsetHeight;
 
     setTipMetrics({
+      tipWidth,
       tipHeight,
+      circleWidth,
       circleHeight,
     });
   }, []);
@@ -44,16 +48,33 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
   useLayoutEffect(calcTipMetrics, [calcTipMetrics]);
   useOnResize(calcTipMetrics);
 
-  let XCoord;
-  let YCoord;
+  let tipXCoord;
+  let tipYCoord;
 
-  if (tipConfig) {
-    XCoord = tipConfig.svgElX + tipConfig.x;
-    YCoord = (tipConfig.svgElY + tipConfig.y)
+  if (tipConfig && tipMetrics) {
+    const { tipWidth } = tipMetrics;
+
+    const svgElLeft = tipConfig.svgElX;
+    const svgElRight = tipConfig.svgElX + tipConfig.svgElWidth;
+    const statPageX = svgElLeft + tipConfig.x;
+
+    tipXCoord = statPageX - tipWidth / 2;
+
+    if (tipXCoord + tipWidth > svgElRight) {
+      tipXCoord = svgElRight - tipWidth;
+    }
+
+
+
+
+
+
+
+    tipYCoord = (tipConfig.svgElY + tipConfig.y)
       - tipMetrics.tipHeight + (tipMetrics.circleHeight / 2);
   } else {
-    XCoord = 0;
-    YCoord = 0;
+    tipXCoord = 0;
+    tipYCoord = 0;
   }
 
   const dateStr = `${tipConfig?.weekday}, ${tipConfig?.month} ${tipConfig?.day}, ${tipConfig?.year}`;
@@ -63,10 +84,10 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
     <div
       ref={tipRef}
       id={tipConfig?.id}
-      className="absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10 translate-x-[-50%]"
+      className="absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10"
       style={{
-        left: `${XCoord}px`,
-        top: `${YCoord}px`,
+        left: `${tipXCoord}px`,
+        top: `${tipYCoord}px`,
         opacity: isActive ? '1' : '0',
         pointerEvents: isActive ? 'all' : 'none',
       }}

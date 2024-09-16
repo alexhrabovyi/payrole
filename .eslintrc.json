@@ -13,6 +13,8 @@
     "React": true
   },
   "rules": {
+    "object-curly-newline": "off",
+    "consistent-return": "off",
     "no-param-reassign": "off",
     "no-return-assign": "off",
     "react/button-has-type": "off",

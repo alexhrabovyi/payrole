@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 export default function useOnResize(func: () => void) {
   useEffect(() => {
-    document.addEventListener('resize', func);
+    window.addEventListener('resize', func);
 
-    return () => document.removeEventListener('resize', func);
+    return () => window.removeEventListener('resize', func);
   }, [func]);
 }
