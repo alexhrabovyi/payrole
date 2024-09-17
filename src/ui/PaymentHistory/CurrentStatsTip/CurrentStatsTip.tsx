@@ -1,8 +1,7 @@
 import {
-  useCallback, useLayoutEffect, useRef, useState,
+  useCallback, useMemo, useRef,
 } from 'react';
 
-import useOnResize from '@/hooks/useOnResize';
 import formatAmount from '@/libs/formatAmount';
 import { TipConfig } from '../PaymentHistory';
 import RevenueIcon from './imgs/revenue_icon.svg';
@@ -19,13 +18,27 @@ interface TipMetrics {
   circleHeight: number,
 }
 
+interface StyleParams {
+  tipXCoord: number,
+  tipYCoord: number,
+  triangleXCoord: number,
+  triangleYCoord: number,
+  triangleClassName: string,
+  circleXCoord: number,
+  circleYCoord: number,
+}
+
 const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
+  const TRIANGLE_LONG_SIDE = 12;
+  const TRIANGLE_SHORT_SIDE = 9;
+  const GAP_BETWEEN_TRIANGLE_AND_CIRCLE = 6;
+  const TIP_X_PADDING = 12;
+  const TRIANGLE_X_PADDING = 12;
+
   const tipRef = useRef<HTMLDivElement | null>(null);
   const circleSpanRef = useRef<HTMLSpanElement | null>(null);
 
-  const [tipMetrics, setTipMetrics] = useState<TipMetrics | null>(null);
-
-  const calcTipMetrics = useCallback(() => {
+  const calcTipMetrics = useCallback<() => TipMetrics | undefined>(() => {
     const tip = tipRef.current;
     const circleSpan = circleSpanRef.current;
 
@@ -37,62 +50,141 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
     const circleWidth = circleSpan.offsetWidth;
     const circleHeight = circleSpan.offsetHeight;
 
-    setTipMetrics({
+    return {
       tipWidth,
       tipHeight,
       circleWidth,
       circleHeight,
-    });
+    };
   }, []);
 
-  useLayoutEffect(calcTipMetrics, [calcTipMetrics]);
-  useOnResize(calcTipMetrics);
+  const styleParams = useMemo<StyleParams>(() => {
+    let tipXCoord = 0;
+    let tipYCoord = 0;
 
-  let tipXCoord;
-  let tipYCoord;
+    let triangleXCoord = 0;
+    let triangleYCoord = 0;
+    let triangleClassName = 'absolute';
 
-  if (tipConfig && tipMetrics) {
-    const { tipWidth } = tipMetrics;
+    let circleXCoord = 0;
+    let circleYCoord = 0;
 
-    const svgElLeft = tipConfig.svgElX;
-    const svgElRight = tipConfig.svgElX + tipConfig.svgElWidth;
-    const statPageX = svgElLeft + tipConfig.x;
+    const tipMetrics = calcTipMetrics();
 
-    tipXCoord = statPageX - tipWidth / 2;
+    if (tipConfig && tipMetrics) {
+      const { tipWidth, tipHeight, circleWidth, circleHeight } = tipMetrics;
 
-    if (tipXCoord + tipWidth > svgElRight) {
-      tipXCoord = svgElRight - tipWidth;
+      const svgElLeft = tipConfig.svgElX;
+      const svgElRight = tipConfig.svgElX + tipConfig.svgElWidth;
+      const statPageX = svgElLeft + tipConfig.x;
+      const statPageY = tipConfig.svgElY + tipConfig.y;
+
+      const isTipRightOverflow = statPageX + tipWidth / 2 > svgElRight - TIP_X_PADDING;
+      const isTipLeftOverflow = statPageX - tipWidth / 2 < svgElLeft + TIP_X_PADDING;
+
+      if (isTipRightOverflow) {
+        tipXCoord = svgElRight - TIP_X_PADDING - tipWidth;
+        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+
+        const isTriangleRightOverflow = triangleXCoord
+          + TRIANGLE_LONG_SIDE > tipWidth - TRIANGLE_X_PADDING;
+
+        if (isTriangleRightOverflow) {
+          tipXCoord = statPageX
+            - (tipWidth + TRIANGLE_SHORT_SIDE + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2);
+          tipYCoord = statPageY - tipHeight / 2;
+
+          triangleXCoord = tipWidth;
+          triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
+          triangleClassName += ' rotate-[-90deg] translate-x-[-20%]';
+
+          circleXCoord = tipWidth + TRIANGLE_SHORT_SIDE + GAP_BETWEEN_TRIANGLE_AND_CIRCLE;
+          circleYCoord = tipHeight / 2 - circleHeight / 2;
+        } else {
+          tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
+
+          triangleYCoord = tipHeight;
+          triangleClassName += ' translate-y-[-20%]';
+
+          circleXCoord = statPageX - tipXCoord - circleWidth / 2;
+          circleYCoord = tipHeight + TRIANGLE_SHORT_SIDE
+            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE;
+        }
+      } else if (isTipLeftOverflow) {
+        tipXCoord = svgElLeft + TIP_X_PADDING;
+        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+
+        const isTriangleLeftOverflow = triangleXCoord < TRIANGLE_X_PADDING;
+
+        if (isTriangleLeftOverflow) {
+          tipXCoord = statPageX + TRIANGLE_SHORT_SIDE
+            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2;
+          tipYCoord = statPageY - tipHeight / 2;
+
+          triangleXCoord = 0 - TRIANGLE_SHORT_SIDE;
+          triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
+          triangleClassName += ' rotate-[90deg]';
+
+          circleXCoord = 0 - TRIANGLE_SHORT_SIDE - GAP_BETWEEN_TRIANGLE_AND_CIRCLE - circleWidth;
+          circleYCoord = tipHeight / 2 - circleHeight / 2;
+        } else {
+          tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
+
+          triangleYCoord = tipHeight;
+          triangleClassName += ' translate-y-[-20%]';
+
+          circleXCoord = statPageX - tipXCoord - circleWidth / 2;
+          circleYCoord = tipHeight + TRIANGLE_SHORT_SIDE
+            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE;
+        }
+      } else {
+        tipXCoord = statPageX - tipWidth / 2;
+
+        tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+          + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
+
+        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+        triangleYCoord = tipHeight;
+        triangleClassName += ' translate-y-[-20%]';
+
+        circleXCoord = statPageX - tipXCoord - circleWidth / 2;
+        circleYCoord = tipHeight + TRIANGLE_SHORT_SIDE
+          + GAP_BETWEEN_TRIANGLE_AND_CIRCLE;
+      }
     }
 
-
-
-
-
-
-
-    tipYCoord = (tipConfig.svgElY + tipConfig.y)
-      - tipMetrics.tipHeight + (tipMetrics.circleHeight / 2);
-  } else {
-    tipXCoord = 0;
-    tipYCoord = 0;
-  }
+    return {
+      tipXCoord,
+      tipYCoord,
+      triangleXCoord,
+      triangleYCoord,
+      triangleClassName,
+      circleXCoord,
+      circleYCoord,
+    };
+  }, [calcTipMetrics, tipConfig]);
 
   const dateStr = `${tipConfig?.weekday}, ${tipConfig?.month} ${tipConfig?.day}, ${tipConfig?.year}`;
   const amount = `$${formatAmount(tipConfig?.amount || 0)}`;
 
   return (
     <div
-      ref={tipRef}
       id={tipConfig?.id}
-      className="absolute w-auto flex flex-col justify-start items-center gap-[12px] z-10"
+      className="absolute w-auto z-10"
       style={{
-        left: `${tipXCoord}px`,
-        top: `${tipYCoord}px`,
+        left: `${styleParams.tipXCoord}px`,
+        top: `${styleParams.tipYCoord}px`,
         opacity: isActive ? '1' : '0',
         pointerEvents: isActive ? 'all' : 'none',
       }}
     >
-      <div className="relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]">
+      <div
+        ref={tipRef}
+        className={`relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] 
+        p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]`}
+      >
         <p className="font-tthoves font-medium text-[14px] text-grey-500">
           {dateStr}
         </p>
@@ -106,19 +198,27 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
           </p>
         </div>
         <svg
-          className="absolute bottom-0 left-[50%] translate-y-[80%] translate-x-[-50%]"
-          width="12"
-          height="9"
+          className={styleParams.triangleClassName}
+          width={TRIANGLE_LONG_SIDE}
+          height={TRIANGLE_SHORT_SIDE}
           viewBox="0 0 12 9"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          style={{
+            left: `${styleParams.triangleXCoord}px`,
+            top: `${styleParams.triangleYCoord}px`,
+          }}
         >
           <path d="M7.44115 7.50231C6.65435 8.31998 5.34565 8.31998 4.55885 7.50231L0.598648 3.38675C-0.623995 2.11615 0.27648 1.25385e-06 2.0398 1.11324e-06L9.96019 4.81637e-07C11.7235 3.41023e-07 12.624 2.11614 11.4014 3.38675L7.44115 7.50231Z" fill="white" />
         </svg>
       </div>
       <span
         ref={circleSpanRef}
-        className="w-[16px] h-[16px] flex justify-center items-center rounded-[50%] bg-white shadow-[0_4px_10px_0_rgba(77,100,255,0.5)]"
+        className="absolute w-[16px] h-[16px] flex justify-center items-center rounded-[50%] bg-white shadow-[0_4px_10px_0_rgba(77,100,255,0.5)]"
+        style={{
+          left: `${styleParams.circleXCoord}px`,
+          top: `${styleParams.circleYCoord}px`,
+        }}
       >
         <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
       </span>
