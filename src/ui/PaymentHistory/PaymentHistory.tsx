@@ -37,6 +37,7 @@ interface StatsCoords extends FormattedPaymentStats {
 
 export interface TipConfig extends StatsCoords {
   svgElWidth: number,
+  svgElHeight: number,
   svgElX: number,
   svgElY: number,
   id: string,
@@ -168,7 +169,6 @@ export default function PaymentHistory() {
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [dateMetrics, setDateMetrics] = useState<DateMetrics | null>(null);
   const [isTipActive, setIsTipActive] = useState(false);
-  const [verticalLineDStroke, setVerticalLineDStroke] = useState('');
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
 
   console.log('render');
@@ -774,10 +774,9 @@ export default function PaymentHistory() {
 
     if (!currentHoveredStats) return;
 
-    const verticalLineBottomY = svgMetrics.height;
-
     const newTipConfig = {
       ...currentHoveredStats,
+      svgElHeight: svgMetrics.height,
       svgElWidth: svgMetrics.width,
       svgElX: svgMetrics.pageX,
       svgElY: svgMetrics.pageY,
@@ -785,7 +784,6 @@ export default function PaymentHistory() {
     };
 
     setTipConfig(newTipConfig);
-    setVerticalLineDStroke(`M ${currentHoveredStats.x} 0 L ${currentHoveredStats.x} ${verticalLineBottomY}`);
   }, [XStep, statsCoords, svgMetrics]);
 
   const onGraphAndDatesOut = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
@@ -895,15 +893,6 @@ export default function PaymentHistory() {
               </linearGradient>
             </defs>
             {graphElems}
-            {isTipActive && (
-              <path
-                d={verticalLineDStroke}
-                fill="none"
-                strokeWidth="2"
-                stroke="#CACACE"
-                strokeDasharray="5,5"
-              />
-            )}
           </svg>
         </div>
         <div className="relative w-full pb-[24px] font-tthoves text-[14px] text-grey-400">
@@ -924,8 +913,6 @@ export default function PaymentHistory() {
   );
 }
 
-// подсказка должна работать по типу того, как в steamdb
-// -- анимация
 // переделать ивенты с учетом того, что тип уже только в пределах дива с свг
 // пофиксить даты
 // пофиксить баг с ререндерами на ховер (возможно, само пофикситься, когда тип уйдет от документа)\
