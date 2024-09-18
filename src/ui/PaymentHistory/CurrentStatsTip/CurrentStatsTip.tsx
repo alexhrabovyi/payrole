@@ -208,7 +208,6 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
         <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
       </span>
       <div
-        id={tipConfig?.id}
         className="absolute w-auto  transition-[left_top_opacity] duration-150 ease-in-out"
         style={{
           left: `${styleParams.tipXCoord}px`,

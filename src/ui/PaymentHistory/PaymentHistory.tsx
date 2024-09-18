@@ -40,7 +40,6 @@ export interface TipConfig extends StatsCoords {
   svgElHeight: number,
   svgElX: number,
   svgElY: number,
-  id: string,
 }
 
 interface SvgMetrics {
@@ -48,11 +47,6 @@ interface SvgMetrics {
   height: number,
   pageX: number,
   pageY: number,
-}
-
-interface DateMetrics {
-  width: number,
-  height: number,
 }
 
 interface StrokeProps {
@@ -117,7 +111,7 @@ function generateRandomStats(): PaymentStats[] {
 
   const arrOfPaymentStats: PaymentStats[] = [];
 
-  for (let i = 365; i >= 0; i -= 1) {
+  for (let i = 731; i >= 0; i -= 1) {
     const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
 
     const prevDate = new Date(currentYear, currentMonth, currentDay - i);
@@ -160,20 +154,13 @@ const WEEKDAYS: Record<number, string> = {
 };
 
 export default function PaymentHistory() {
-  const graphAndDatesRef = useRef<null | HTMLDivElement>(null);
   const svgWrapperRef = useRef<null | HTMLDivElement>(null);
   const svgRef = useRef<null | SVGSVGElement>(null);
-  const measuredDateRef = useRef<null | HTMLParagraphElement>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
-  const [dateMetrics, setDateMetrics] = useState<DateMetrics | null>(null);
   const [isTipActive, setIsTipActive] = useState(false);
   const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
-
-  console.log('render');
-
-  const TIP_ID = 'statsTipEl';
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -212,22 +199,6 @@ export default function PaymentHistory() {
 
   useLayoutEffect(setupSVGElem, [setupSVGElem]);
 
-  const setupDateMetrics = useCallback(() => {
-    const measuredDate = measuredDateRef.current;
-
-    if (!measuredDate) return;
-
-    const width = measuredDate.offsetWidth;
-    const height = measuredDate.offsetHeight;
-
-    setDateMetrics({
-      width,
-      height,
-    });
-  }, []);
-
-  useLayoutEffect(setupDateMetrics, [setupDateMetrics]);
-
   const formattedAllPaymentStats = useMemo(() => {
     function divideDate(dateStr: string) {
       const splittedDate = dateStr.split('-');
@@ -249,7 +220,7 @@ export default function PaymentHistory() {
       };
     }
 
-    const statsObj = paymentStats;
+    const statsObj = paymentStats.slice(366);
 
     const formattedPaymentStats: FormattedPaymentStats[] = [];
 
@@ -297,6 +268,41 @@ export default function PaymentHistory() {
       float,
     };
   }, [currentPeriodFormattedPaymentStats]);
+
+  const comparePercent = useMemo(() => {
+    const formattedStatsQuantity = paymentStats.length;
+
+    let startIndex = 0;
+    let endIndex = 0;
+
+    switch (activeDateRangeBtn) {
+      case '1M':
+        startIndex = formattedStatsQuantity - 62;
+        endIndex = formattedStatsQuantity - 31;
+        break;
+      case '3M':
+        startIndex = formattedStatsQuantity - 186;
+        endIndex = formattedStatsQuantity - 93;
+        break;
+      case '6M':
+        startIndex = formattedStatsQuantity - 372;
+        endIndex = formattedStatsQuantity - 186;
+        break;
+      case '1Y':
+        startIndex = 0;
+        endIndex = 366;
+        break;
+    }
+
+    const previousPeriodStats = paymentStats.slice(startIndex, endIndex);
+    const previousPeriodAmount = previousPeriodStats.reduce((t, s) => t += Number(s.amount), 0);
+    const newComparePercent = Number((((currentPeriodTotalAmount.totalAmount
+      / previousPeriodAmount) * 100) - 100).toFixed(0));
+
+    return newComparePercent;
+  }, [activeDateRangeBtn, currentPeriodTotalAmount]);
+
+  const comparePercentStr = comparePercent >= 0 ? `+${comparePercent}%` : `${comparePercent}%`;
 
   const compareText = useMemo(() => {
     let newCompareText: CompareText;
@@ -627,18 +633,18 @@ export default function PaymentHistory() {
   const XStep = statsCoordsAndGraphElemsAndStepX?.XStep;
 
   const dateElems = useMemo(() => {
-    if (!statsCoords || !svgMetrics || !dateMetrics) return;
+    if (!statsCoords || !svgMetrics) return;
 
-    const PADDING_X_PX = 24;
+    const OFFSET_X_PX = 50;
+    const AMOUNT_OF_MIDDLE_DATES = 3;
 
-    const dateHalfWidth = dateMetrics.width / 2;
-    const startX = dateHalfWidth + PADDING_X_PX;
-    const endX = svgMetrics.width - PADDING_X_PX - dateHalfWidth;
-    // const xStep = (endX - startX) / 5;
-    // const xStep = ((svgMetrics.width - PADDING_X_PX - dateMetrics.width) - (PADDING_X_PX + dateMetrics.width)) / 3;
+    const startX = OFFSET_X_PX;
+    const endX = svgMetrics.width - OFFSET_X_PX;
 
     let firstSuitableStatIndex: number;
-    let lastSuitableStatIndex: number;
+
+    let firstSuitableStat: StatsCoords;
+    let lastSuitableStat: StatsCoords;
 
     for (let i = 1; i < statsCoords.length; i += 1) {
       const currentStat = statsCoords[i];
@@ -650,8 +656,10 @@ export default function PaymentHistory() {
 
         if (prevStatXDiff < currentStatXDiff) {
           firstSuitableStatIndex = i - 1;
+          firstSuitableStat = prevStat;
         } else {
           firstSuitableStatIndex = i;
+          firstSuitableStat = currentStat;
         }
 
         break;
@@ -667,30 +675,53 @@ export default function PaymentHistory() {
         const currentStatXDiff = endX - currentStat.x;
 
         if (nextStatXDiff < currentStatXDiff) {
-          lastSuitableStatIndex = i + 1;
+          lastSuitableStat = nextStat;
         } else {
-          lastSuitableStatIndex = i;
+          lastSuitableStat = currentStat;
         }
 
         break;
       }
     }
 
-    const suitableStats = [
-      statsCoords[firstSuitableStatIndex!], statsCoords[lastSuitableStatIndex!]];
+    const middleDatesStartX = firstSuitableStat!.x;
+    const middleDatesEndX = lastSuitableStat!.x;
 
-    // statsCoords.forEach((s, i) => {
-    //   if (currentX <= s.x) {
-    //     suitableStats.push(s);
-    //     currentX += xStep;
-    //   }
+    const xStep = (middleDatesEndX - middleDatesStartX) / (AMOUNT_OF_MIDDLE_DATES + 1);
 
-    // if (s.x <= currentX && statsCoords[i + 1]?.x > currentX) {
-    //   suitableStats.push(s);
-    //   currentX += xStep;
-    // }
+    const middleDatesBreakpoints = [];
 
-    // console.log(suitableStats, xStep, startX, endX, svgMetrics.width, dateMetrics.width);
+    for (let i = 1; i <= AMOUNT_OF_MIDDLE_DATES; i += 1) {
+      const breakPoint = middleDatesStartX + xStep * i;
+      middleDatesBreakpoints.push(breakPoint);
+    }
+
+    let currentBreakPointIndex = 0;
+    const middleDates: StatsCoords[] = [];
+
+    for (let i = firstSuitableStatIndex! + 1; i < statsCoords.length; i += 1) {
+      const currentBreakPoint = middleDatesBreakpoints[currentBreakPointIndex];
+
+      if (!currentBreakPoint) break;
+
+      const currentStatX = statsCoords[i].x;
+      const prevStatX = statsCoords[i - 1].x;
+
+      if (currentStatX > currentBreakPoint) {
+        const currentStatDiffer = currentStatX - currentBreakPoint;
+        const prevStatDiffer = currentBreakPoint - prevStatX;
+
+        if (prevStatDiffer < currentStatDiffer) {
+          middleDates.push(statsCoords[i - 1]);
+        } else {
+          middleDates.push(statsCoords[i]);
+        }
+
+        currentBreakPointIndex += 1;
+      }
+    }
+
+    const suitableStats = [firstSuitableStat!, ...middleDates, lastSuitableStat!];
 
     const newDateElems = suitableStats.map((s) => {
       const text = `${s.month} ${s.day}`;
@@ -698,10 +729,6 @@ export default function PaymentHistory() {
       return (
         <p
           key={s.x}
-          className="absolute top-0 translate-x-[-50%]"
-          style={{
-            left: `${s.x}px`,
-          }}
         >
           {text}
         </p>
@@ -709,51 +736,9 @@ export default function PaymentHistory() {
     });
 
     return newDateElems;
-  }, [dateMetrics, statsCoords, svgMetrics]);
+  }, [statsCoords, svgMetrics]);
 
-  // const dateElems = useMemo(() => {
-  //   if (!statsCoords) return;
-
-  //   const periodStartObjs: StatsCoords[] = [];
-
-  //   if (activeDateRangeBtn === '1M') {
-  //     for (let i = 1; i < statsCoords.length - 2; i += 4) {
-  //       periodStartObjs.push(statsCoords[i]);
-  //     }
-  //   } else if (activeDateRangeBtn === '3M') {
-  //     for (let i = 3; i < statsCoords.length - 3; i += 7) {
-  //       periodStartObjs.push(statsCoords[i]);
-  //     }
-  //   } else if (activeDateRangeBtn === '6M') {
-  //     for (let i = 5; i < statsCoords.length - 3; i += 14) {
-  //       periodStartObjs.push(statsCoords[i]);
-  //     }
-  //   } else if (activeDateRangeBtn === '1Y') {
-  //     for (let i = 12; i < statsCoords.length - 3; i += 28) {
-  //       periodStartObjs.push(statsCoords[i]);
-  //     }
-  //   }
-
-  //   const newDateElems = periodStartObjs.map((m) => {
-  //     const text = `${m.month} ${m.day}`;
-
-  //     return (
-  //       <p
-  //         key={m.x}
-  //         className="absolute top-0 translate-x-[-50%]"
-  //         style={{
-  //           left: `${m.x}px`,
-  //         }}
-  //       >
-  //         {text}
-  //       </p>
-  //     );
-  //   });
-
-  //   return newDateElems;
-  // }, [activeDateRangeBtn, statsCoords]);
-
-  const onGraphAndDatesHover = useCallback((e: MouseEventInit) => {
+  const onGraphAndDatesHover = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
     const { clientX } = e;
 
     if (!clientX || !svgMetrics || !statsCoords || !XStep) return;
@@ -780,31 +765,26 @@ export default function PaymentHistory() {
       svgElWidth: svgMetrics.width,
       svgElX: svgMetrics.pageX,
       svgElY: svgMetrics.pageY,
-      id: TIP_ID,
     };
 
     setTipConfig(newTipConfig);
   }, [XStep, statsCoords, svgMetrics]);
 
   const onGraphAndDatesOut = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
-    const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock')
-      || (e.relatedTarget as HTMLElement | null)?.closest(`#${TIP_ID}`);
+    const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
 
     if (!nextElem) {
       setIsTipActive(false);
-      document.removeEventListener('mousemove', onGraphAndDatesHover);
     }
-  }, [onGraphAndDatesHover]);
+  }, []);
 
   const onGraphAndDatesOver = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
-    const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock')
-      || (e.relatedTarget as HTMLElement | null)?.closest(`#${TIP_ID}`);
+    const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
 
     if (prevElem) return;
 
     setIsTipActive(true);
-    document.addEventListener('mousemove', onGraphAndDatesHover);
-  }, [onGraphAndDatesHover]);
+  }, []);
 
   return (
     <div className="w-full h-full flex flex-col justify-start items-start gap-[10px] border-grey">
@@ -852,8 +832,10 @@ export default function PaymentHistory() {
             </span>
           </p>
           <div className="flex justify-start items-center gap-[8px]">
-            <Badge>
-              +23%
+            <Badge
+              isPositive={comparePercent >= 0}
+            >
+              {comparePercentStr}
             </Badge>
             <p className="font-tthoves text-[14px] text-grey-400">
               {compareText}
@@ -863,9 +845,9 @@ export default function PaymentHistory() {
       </div>
       <div
         id="graphAndDatesBlock"
-        ref={graphAndDatesRef}
         className="w-full h-full flex flex-col justify-start items-start gap-[16px]"
         onMouseOver={onGraphAndDatesOver}
+        onMouseMove={onGraphAndDatesHover}
         onMouseOut={onGraphAndDatesOut}
       >
         <CurrentStatsTip
@@ -895,25 +877,12 @@ export default function PaymentHistory() {
             {graphElems}
           </svg>
         </div>
-        <div className="relative w-full pb-[24px] font-tthoves text-[14px] text-grey-400">
-          <p
-            ref={measuredDateRef}
-            className="opacity-0 inline"
-            aria-hidden
-          >
-            Aug 30
-          </p>
+        <div className="w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400">
           {dateElems}
         </div>
-        {/* <div className="relative w-full h-[45px] px-[24px] pb-[24px] font-tthoves text-[14px] text-grey-400">
-          {dateElems}
-        </div> */}
       </div>
     </div>
   );
 }
 
-// переделать ивенты с учетом того, что тип уже только в пределах дива с свг
-// пофиксить даты
-// пофиксить баг с ререндерами на ховер (возможно, само пофикситься, когда тип уйдет от документа)\
 // вынести див с свг и датами в отдельный компонент
