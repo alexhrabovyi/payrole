@@ -3,7 +3,7 @@ import {
 } from 'react';
 
 import formatAmount from '@/libs/formatAmount';
-import { TipConfig } from '../PaymentHistory';
+import { TipConfig } from '../GraphAndDates/GraphAndDates';
 import RevenueIcon from './imgs/revenue_icon.svg';
 
 interface StatsTipProps {
