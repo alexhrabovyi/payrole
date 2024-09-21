@@ -83,72 +83,72 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
     if (tipConfig && tipMetrics) {
       const { tipWidth, tipHeight, circleWidth, circleHeight } = tipMetrics;
 
-      const svgElLeft = tipConfig.svgElX;
-      const svgElRight = tipConfig.svgElX + tipConfig.svgElWidth;
-      const statPageX = svgElLeft + tipConfig.x;
-      const statPageY = tipConfig.svgElY + tipConfig.y;
+      const statX = tipConfig.x;
+      const statY = tipConfig.y;
+      const svgWidth = tipConfig.svgElWidth;
+      const svgHeight = tipConfig.svgElHeight;
 
-      const isTipRightOverflow = statPageX + tipWidth / 2 > svgElRight - TIP_X_PADDING;
-      const isTipLeftOverflow = statPageX - tipWidth / 2 < svgElLeft + TIP_X_PADDING;
+      const isTipRightOverflow = statX + tipWidth / 2 > svgWidth - TIP_X_PADDING;
+      const isTipLeftOverflow = statX - tipWidth / 2 < TIP_X_PADDING;
 
-      circleXCoord = statPageX - circleWidth / 2;
-      circleYCoord = statPageY - circleHeight / 2;
+      circleXCoord = statX - circleWidth / 2;
+      circleYCoord = statY - circleHeight / 2;
 
-      verticalLineX = statPageX - 1;
-      verticalLineY = tipConfig.svgElY;
-      verticalLineHeight = tipConfig.svgElHeight;
+      verticalLineX = statX - 1;
+      verticalLineY = 0;
+      verticalLineHeight = svgHeight;
       verticalLinePath = `M 0 0 L 0 ${verticalLineHeight}`;
 
       if (isTipRightOverflow) {
-        tipXCoord = svgElRight - TIP_X_PADDING - tipWidth;
-        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+        tipXCoord = svgWidth - TIP_X_PADDING - tipWidth;
+        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
 
         const isTriangleRightOverflow = triangleXCoord
           + TRIANGLE_LONG_SIDE > tipWidth - TRIANGLE_X_PADDING;
 
         if (isTriangleRightOverflow) {
-          tipXCoord = statPageX
+          tipXCoord = statX
             - (tipWidth + TRIANGLE_SHORT_SIDE + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2);
-          tipYCoord = statPageY - tipHeight / 2;
+          tipYCoord = statY - tipHeight / 2;
 
           triangleXCoord = tipWidth;
           triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
           triangleClassName += ' rotate-[-90deg] translate-x-[-20%]';
         } else {
-          tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+          tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
             + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
 
           triangleYCoord = tipHeight;
           triangleClassName += ' translate-y-[-20%]';
         }
       } else if (isTipLeftOverflow) {
-        tipXCoord = svgElLeft + TIP_X_PADDING;
-        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+        tipXCoord = TIP_X_PADDING;
+        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
 
         const isTriangleLeftOverflow = triangleXCoord < TRIANGLE_X_PADDING;
 
         if (isTriangleLeftOverflow) {
-          tipXCoord = statPageX + TRIANGLE_SHORT_SIDE
+          tipXCoord = statX + TRIANGLE_SHORT_SIDE
             + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2;
-          tipYCoord = statPageY - tipHeight / 2;
+          tipYCoord = statY - tipHeight / 2;
 
           triangleXCoord = 0 - TRIANGLE_SHORT_SIDE;
           triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
           triangleClassName += ' rotate-[90deg]';
         } else {
-          tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+          tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
             + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
 
           triangleYCoord = tipHeight;
           triangleClassName += ' translate-y-[-20%]';
         }
       } else {
-        tipXCoord = statPageX - tipWidth / 2;
+        tipXCoord = statX - tipWidth / 2;
 
-        tipYCoord = statPageY - (tipHeight + TRIANGLE_SHORT_SIDE
+        tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
           + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
 
-        triangleXCoord = statPageX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
         triangleYCoord = tipHeight;
         triangleClassName += ' translate-y-[-20%]';
       }

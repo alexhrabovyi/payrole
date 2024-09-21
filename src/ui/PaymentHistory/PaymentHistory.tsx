@@ -1,11 +1,10 @@
-'use client';
-
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, TransitionEventHandler, useCallback, useMemo, useRef, useState } from 'react';
+import formatAmount from '@/libs/formatAmount';
 
 import Badge from '@/ui/Badge/Badge';
-import formatAmount from '@/libs/formatAmount';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 import GraphAndDates from './GraphAndDates/GraphAndDates';
+import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionHistories/PaymentAndTransactionHistories';
 
 import FullScreenOnIcon from './images/on_fullscreen_icon.svg';
 import FullScreenOffIcon from './images/off_fullscreen_icon.svg';
@@ -36,7 +35,7 @@ interface FormattedTotalAmount {
 
 function generateRandomStats(): PaymentStats[] {
   function generateRandomNum(min: number, max: number) {
-    return (Math.random() * (max - min + 1) + min).toFixed(2);
+    return Math.random() * (max - min + 1) + min;
   }
 
   function createStatsObj(amount: string, year: number, month: number, day: number): PaymentStats {
@@ -46,8 +45,11 @@ function generateRandomStats(): PaymentStats[] {
     };
   }
 
-  const MIN_AMOUNT = -1500;
+  const MIN_AMOUNT = -3500;
   const MAX_AMOUNT = 3500;
+
+  let currentMinAmount = MIN_AMOUNT;
+  let currentMaxAmount = MAX_AMOUNT;
 
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
@@ -56,15 +58,53 @@ function generateRandomStats(): PaymentStats[] {
 
   const arrOfPaymentStats: PaymentStats[] = [];
 
+  let strick = 0;
+
   for (let i = 731; i >= 0; i -= 1) {
-    const randomNum = generateRandomNum(MIN_AMOUNT, MAX_AMOUNT);
+    const randomNum = generateRandomNum(currentMinAmount, currentMaxAmount);
+
+    if (randomNum >= 0) {
+      strick += 1;
+    } else {
+      strick -= 1;
+    }
+
+    if (strick > 8) {
+      strick = 0;
+      currentMinAmount = randomNum - 700;
+      currentMaxAmount = randomNum - 200;
+    } else if (strick < -8) {
+      strick = 0;
+      currentMinAmount = randomNum + 200;
+      currentMaxAmount = randomNum + 700;
+    } else {
+      const isRising = Math.random() >= 0.5;
+
+      if (isRising) {
+        currentMinAmount = randomNum;
+        currentMaxAmount = randomNum + 500;
+      } else {
+        currentMaxAmount = randomNum;
+        currentMinAmount = randomNum - 500;
+      }
+
+      if (currentMinAmount < MIN_AMOUNT) {
+        currentMinAmount = MIN_AMOUNT;
+      }
+
+      if (currentMaxAmount > MAX_AMOUNT) {
+        currentMaxAmount = MAX_AMOUNT;
+      }
+    }
+
+    const fixedNum = randomNum.toFixed(2);
 
     const prevDate = new Date(currentYear, currentMonth, currentDay - i);
     const prevDay = prevDate.getDate();
     const prevMonth = prevDate.getMonth();
     const prevYear = prevDate.getFullYear();
 
-    const statsObj = createStatsObj(randomNum, prevYear, prevMonth, prevDay);
+    const statsObj = createStatsObj(fixedNum, prevYear, prevMonth, prevDay);
     arrOfPaymentStats.push(statsObj);
   }
 
@@ -98,11 +138,32 @@ const WEEKDAYS: Record<number, string> = {
   6: 'Saturday',
 };
 
-export default function PaymentHistory() {
+interface PaymentHistoryProps {
+  isFullScreenOn: boolean,
+  setIsFullScreenOn: Dispatch<SetStateAction<boolean>>
+  wrapperMetrics: PaymentAndTransactionMetrics | null,
+}
+
+const PaymentHistory: React.FC<PaymentHistoryProps> = (
+  { isFullScreenOn, setIsFullScreenOn, wrapperMetrics },
+) => {
   const paymentComponentRef = useRef<HTMLDivElement | null>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
-  const [isFullScreenOn, setIsFullScreenOn] = useState(false);
+
+  const componentWidth = useMemo(() => {
+    let width = '100%';
+
+    if (!wrapperMetrics) return width;
+
+    if (isFullScreenOn) {
+      width = `${wrapperMetrics.width}px`;
+    } else {
+      width = `${(wrapperMetrics.width - wrapperMetrics.colGap) / 2}px`;
+    }
+
+    return width;
+  }, [isFullScreenOn, wrapperMetrics]);
 
   const formattedAllPaymentStats = useMemo(() => {
     function divideDate(dateStr: string) {
@@ -235,44 +296,31 @@ export default function PaymentHistory() {
 
     if (!paymentComponent) return;
 
-    const currentWidth = paymentComponent.offsetWidth;
-
-    if (isFullScreenOn) {
-      paymentComponent.style.gridColumn = '';
-    } else {
-      paymentComponent.style.gridColumn = '1/3';
-    }
-
-    const newWidth = paymentComponent.offsetWidth;
-
-    paymentComponent.style.width = `${currentWidth}px`;
-    paymentComponent.style.transitionDuration = '300ms';
+    paymentComponent.style.transitionDuration = '150ms';
     paymentComponent.style.transitionProperty = 'all';
     paymentComponent.style.transitionTimingFunction = 'ease-in-out';
 
-    setTimeout(() => {
-      paymentComponent.style.width = `${newWidth}px`;
+    setIsFullScreenOn((currentState) => !currentState);
+  }, [paymentComponentRef, setIsFullScreenOn]);
 
-      paymentComponent.addEventListener('animationend', () => {
-        console.log('true');
-        paymentComponent.style.width = '';
-        paymentComponent.style.transitionDuration = '';
-        paymentComponent.style.transitionProperty = '';
-        paymentComponent.style.transitionTimingFunction = '';
-      }, { once: true });
-    });
+  let mainDivClassName = 'min-h-[500px] flex flex-col justify-start items-start gap-[10px] border-grey';
+  if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
 
-    setIsFullScreenOn(!isFullScreenOn);
-    console.log(currentWidth, newWidth);
-  }, [isFullScreenOn]);
-
-  let mainDivClassName = 'w-full h-full max-h-[520px] flex flex-col justify-start items-start gap-[10px] border-grey';
-  // if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
+  const paymentComponentOnTransitionEnd = useCallback<TransitionEventHandler<
+    HTMLDivElement>>((e) => {
+      (e.target as HTMLElement).style.transitionDuration = '';
+      (e.target as HTMLElement).style.transitionProperty = '';
+      (e.target as HTMLElement).style.transitionTimingFunction = '';
+    }, []);
 
   return (
     <div
       ref={paymentComponentRef}
       className={mainDivClassName}
+      style={{
+        width: componentWidth,
+      }}
+      onTransitionEnd={paymentComponentOnTransitionEnd}
     >
       <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
         <div className="w-full flex justify-between items-center">
@@ -313,7 +361,6 @@ export default function PaymentHistory() {
             <button
               type="button"
               className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
-              // onClick={() => setIsFullScreenOn(!isFullScreenOn)}
               onClick={fullScreenButtonOnClick}
             >
               {isFullScreenOn ? <FullScreenOffIcon className="hover:scale-[0.8] transition-standart" />
@@ -343,11 +390,12 @@ export default function PaymentHistory() {
       <GraphAndDates
         paymentStats={currentPeriodFormattedPaymentStats}
         isFullScreenOn={isFullScreenOn}
+        parentMetrics={wrapperMetrics}
       />
     </div>
   );
-}
+};
 
-// fix dates position (especially when the fullscreen mode on)
-// add animation to PaymentHistory component when changing fullscreen mode
-// add animation to invoices when changing fullscreen mode
+export default PaymentHistory;
+
+// revise all code to optimize

@@ -1,6 +1,9 @@
 import { MouseEventHandler, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
 import useOnResize from '@/hooks/useOnResize';
+import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionHistories/PaymentAndTransactionHistories';
 import { FormattedPaymentStats } from '../PaymentHistory';
+
 import CurrentStatsTip from '../CurrentStatsTip/CurrentStatsTip';
 
 type AmountType = 'negative' | 'positive';
@@ -13,8 +16,6 @@ interface StatsCoords extends FormattedPaymentStats {
 export interface TipConfig extends StatsCoords {
   svgElWidth: number,
   svgElHeight: number,
-  svgElX: number,
-  svgElY: number,
 }
 
 interface SvgMetrics {
@@ -61,9 +62,12 @@ interface PrevAdditionalCoords {
 interface GraphAndDatesProps {
   paymentStats: FormattedPaymentStats[];
   isFullScreenOn: boolean,
+  parentMetrics: PaymentAndTransactionMetrics | null;
 }
 
-const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScreenOn }) => {
+const GraphAndDates: React.FC<GraphAndDatesProps> = ({
+  paymentStats, isFullScreenOn, parentMetrics,
+}) => {
   const svgWrapperRef = useRef<null | HTMLDivElement>(null);
   const svgRef = useRef<null | SVGSVGElement>(null);
 
@@ -74,16 +78,21 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
 
-    if (!svgWrapper) return;
+    if (!svgWrapper || !parentMetrics) return;
 
-    const width = svgWrapper.offsetWidth;
+    let width: number;
+
+    if (isFullScreenOn) {
+      width = parentMetrics.width;
+    } else {
+      width = (parentMetrics.width - parentMetrics.colGap) / 2;
+    }
+
     const height = svgWrapper.offsetHeight;
 
     const { x: windowX, y: windowY } = svgWrapper.getBoundingClientRect();
     const pageX = windowX + window.scrollX;
     const pageY = windowY + window.scrollY;
-
-    console.log(height);
 
     setSvgMetrics({
       width,
@@ -91,7 +100,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
       pageX,
       pageY,
     });
-  }, [isFullScreenOn]);
+  }, [isFullScreenOn, parentMetrics]);
 
   useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
   useOnResize(calcSvgMetric);
@@ -421,7 +430,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
     if (!statsCoords || !svgMetrics) return;
 
     const OFFSET_X_PX = 50;
-    const amountOfMiddleDates = isFullScreenOn ? 7 : 3;
+    const amountOfMiddleDates = isFullScreenOn ? 6 : 4;
 
     const startX = OFFSET_X_PX;
     const endX = svgMetrics.width - OFFSET_X_PX;
@@ -514,6 +523,11 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
       return (
         <p
           key={s.x}
+          style={{
+            position: 'absolute',
+            left: `${s.x}px`,
+            transform: 'translateX(-50%)',
+          }}
         >
           {text}
         </p>
@@ -548,8 +562,6 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
       ...currentHoveredStats,
       svgElHeight: svgMetrics.height,
       svgElWidth: svgMetrics.width,
-      svgElX: svgMetrics.pageX,
-      svgElY: svgMetrics.pageY,
     };
 
     setTipConfig(newTipConfig);
@@ -574,7 +586,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
   return (
     <div
       id="graphAndDatesBlock"
-      className="w-full h-full flex flex-col justify-start items-start gap-[16px]"
+      className="relative w-full h-full flex flex-col justify-start items-start gap-[16px]"
       onMouseOver={onGraphAndDatesOver}
       onMouseMove={onGraphAndDatesHover}
       onMouseOut={onGraphAndDatesOut}
@@ -585,7 +597,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
       />
       <div
         ref={svgWrapperRef}
-        className="w-full h-full max-h-[245px]"
+        className="w-full h-full max-h-[265px]"
       >
         <svg
           ref={svgRef}
@@ -606,7 +618,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({ paymentStats, isFullScree
           {graphElems}
         </svg>
       </div>
-      <div className="w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400">
+      <div className="relative w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400">
         {dateElems}
       </div>
     </div>

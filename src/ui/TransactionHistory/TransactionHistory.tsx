@@ -1,13 +1,79 @@
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 import links from '@/libs/links';
+import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionHistories/PaymentAndTransactionHistories';
+
 import avatarSrc from './imgs/avatar.png';
 
-export default function TransactionHistory() {
+interface TransactionHistoryProps {
+  isPaymentFullScreenOn: boolean,
+  wrapperMetrics: PaymentAndTransactionMetrics | null;
+}
+
+const TransactionHistory: React.FC<TransactionHistoryProps> = (
+  { isPaymentFullScreenOn, wrapperMetrics },
+) => {
+  const transactionComponentRef = useRef<HTMLDivElement | null>(null);
+
+  const [prevIsFullScreenOn, setPrevIsFullScreenOn] = useState(isPaymentFullScreenOn);
+
+  let position: 'absolute' | 'relative';
+  let width: string;
+  let height: string;
+  let topPos: string;
+  let leftPos: string;
+
+  if (wrapperMetrics) {
+    const componentWidth = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
+    const componentHeight = wrapperMetrics.height;
+
+    position = 'absolute';
+    width = `${componentWidth}px`;
+    height = `${componentHeight}px`;
+
+    if (isPaymentFullScreenOn) {
+      topPos = `${componentHeight + wrapperMetrics.rowGap}px`;
+      leftPos = `${wrapperMetrics.width / 2 - componentWidth / 2}px`;
+    } else {
+      topPos = '0px';
+      leftPos = `${componentWidth + wrapperMetrics.colGap}px`;
+    }
+  } else {
+    position = 'relative';
+    width = '100%';
+    height = '100%';
+    topPos = '0px';
+    leftPos = '0px';
+  }
+
+  const transactionComponent = transactionComponentRef.current;
+
+  if (transactionComponent && (isPaymentFullScreenOn !== prevIsFullScreenOn)) {
+    transactionComponent.style.transitionDuration = '150ms';
+    transactionComponent.style.transitionProperty = 'all';
+    transactionComponent.style.transitionTimingFunction = 'ease-in-out';
+
+    transactionComponent.addEventListener('transitionend', () => {
+      transactionComponent.style.transitionDuration = '';
+      transactionComponent.style.transitionProperty = '';
+      transactionComponent.style.transitionTimingFunction = '';
+      setPrevIsFullScreenOn(!prevIsFullScreenOn);
+    }, { once: true });
+  }
+
   return (
-    <div className="w-full h-full p-[24px] flex flex-col justify-start
-      items-stretch gap-[24px] border-grey"
+    <div
+      ref={transactionComponentRef}
+      className="p-[24px] flex flex-col justify-start items-stretch gap-[24px] border-grey bg-white"
+      style={{
+        position,
+        width,
+        height,
+        top: topPos,
+        left: leftPos,
+      }}
     >
       <div className="w-full flex justify-between items-center">
         <h3 className="font-tthoves font-medium text-[20px] text-darkBlue">
@@ -218,4 +284,6 @@ export default function TransactionHistory() {
       </div>
     </div>
   );
-}
+};
+
+export default TransactionHistory;
