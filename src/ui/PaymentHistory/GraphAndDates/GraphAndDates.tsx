@@ -1,4 +1,4 @@
-import { MouseEventHandler, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardEventHandler, PointerEventHandler, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import useOnResize from '@/hooks/useOnResize';
 import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionHistories/PaymentAndTransactionHistories';
@@ -68,12 +68,13 @@ interface GraphAndDatesProps {
 const GraphAndDates: React.FC<GraphAndDatesProps> = ({
   paymentStats, isFullScreenOn, parentMetrics,
 }) => {
+  const graphAndDatesBlockRef = useRef<HTMLDivElement | null>(null);
   const svgWrapperRef = useRef<null | HTMLDivElement>(null);
   const svgRef = useRef<null | SVGSVGElement>(null);
 
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [isTipActive, setIsTipActive] = useState(false);
-  const [tipConfig, setTipConfig] = useState<TipConfig | null>(null);
+  const [activeStatsIndex, setActiveStatsIndex] = useState(0);
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -537,59 +538,205 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     return newDateElems;
   }, [isFullScreenOn, statsCoords, svgMetrics]);
 
-  const onGraphAndDatesHover = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
-    const { clientX } = e;
+  const tipConfig = useMemo(() => {
+    if (!statsCoords || !svgMetrics) return;
 
-    if (!clientX || !svgMetrics || !statsCoords || !XStep) return;
+    let currentActiveIndex = activeStatsIndex;
+
+    if (currentActiveIndex >= statsCoords.length) {
+      currentActiveIndex = 0;
+      setActiveStatsIndex(currentActiveIndex);
+    }
+
+    const activeStats = statsCoords[currentActiveIndex];
+
+    const newTipConfig: TipConfig = {
+      ...activeStats,
+      svgElHeight: svgMetrics.height,
+      svgElWidth: svgMetrics.width,
+    };
+
+    return newTipConfig;
+  }, [activeStatsIndex, statsCoords, svgMetrics]);
+
+  // event functions
+
+  const inferNewActiveStatsIndex = useCallback((x: number) => {
+    if (!statsCoords || !XStep) return;
 
     const halfOfXStep = XStep / 2;
-    const currentSvgX = clientX - svgMetrics.pageX;
-    let currentHoveredStats: StatsCoords | undefined;
+
+    if (x <= 0) {
+      return 0;
+    }
+
+    if (x >= statsCoords[statsCoords.length - 1].x) {
+      return statsCoords.length - 1;
+    }
 
     for (let i = 0; i < statsCoords.length; i += 1) {
       const currentStatsMinX = statsCoords[i].x - halfOfXStep;
       const currentStatsMaxX = statsCoords[i].x + halfOfXStep;
 
-      if (currentSvgX >= currentStatsMinX && currentSvgX <= currentStatsMaxX) {
-        currentHoveredStats = statsCoords[i];
-        break;
+      if (x >= currentStatsMinX && x <= currentStatsMaxX) {
+        return i;
       }
     }
+  }, [XStep, statsCoords]);
 
-    if (!currentHoveredStats) return;
-
-    const newTipConfig = {
-      ...currentHoveredStats,
-      svgElHeight: svgMetrics.height,
-      svgElWidth: svgMetrics.width,
-    };
-
-    setTipConfig(newTipConfig);
-  }, [XStep, statsCoords, svgMetrics]);
-
-  const onGraphAndDatesOut = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
-    const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
-
-    if (!nextElem) {
-      setIsTipActive(false);
-    }
-  }, []);
-
-  const onGraphAndDatesOver = useCallback<MouseEventHandler<HTMLDivElement>>((e) => {
-    const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
-
-    if (prevElem) return;
-
+  const onGraphAndDatesFocus = useCallback(() => {
     setIsTipActive(true);
   }, []);
 
+  const onGraphAndDatesBlur = useCallback(() => {
+    setIsTipActive(false);
+  }, []);
+
+  const onGraphAndDatesKeyDown = useCallback<KeyboardEventHandler<HTMLDivElement>>((e) => {
+    if (!statsCoords) return;
+
+    const suitableKeyboardCodes = [
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+
+    const { code } = e;
+
+    if (suitableKeyboardCodes.includes(code)) {
+      e.preventDefault();
+
+      let newActiveStatsIndex: number;
+
+      switch (code) {
+        case 'ArrowLeft':
+        case 'ArrowDown':
+          newActiveStatsIndex = activeStatsIndex - 1;
+          if (newActiveStatsIndex < 0) newActiveStatsIndex = 0;
+          break;
+        case 'ArrowRight':
+        case 'ArrowUp':
+          newActiveStatsIndex = activeStatsIndex + 1;
+          if (newActiveStatsIndex === statsCoords.length) {
+            newActiveStatsIndex = statsCoords.length - 1;
+          }
+          break;
+        case 'PageDown':
+          newActiveStatsIndex = activeStatsIndex - 5;
+          if (newActiveStatsIndex < 0) newActiveStatsIndex = 0;
+          break;
+        case 'PageUp':
+          newActiveStatsIndex = activeStatsIndex + 5;
+          if (newActiveStatsIndex >= statsCoords.length) {
+            newActiveStatsIndex = statsCoords.length - 1;
+          }
+          break;
+        case 'Home':
+          newActiveStatsIndex = statsCoords.length - 1;
+          break;
+        case 'End':
+          newActiveStatsIndex = 0;
+          break;
+      }
+
+      setActiveStatsIndex(newActiveStatsIndex!);
+    }
+  }, [activeStatsIndex, statsCoords]);
+
+  const onGraphAndDatesMove = useCallback((e: PointerEvent) => {
+    e.preventDefault();
+
+    const { clientX } = e;
+
+    if (!clientX || !svgMetrics) return;
+
+    const currentSvgX = clientX - svgMetrics.pageX;
+
+    const newIndex = inferNewActiveStatsIndex(currentSvgX);
+    setActiveStatsIndex(newIndex!);
+  }, [inferNewActiveStatsIndex, svgMetrics]);
+
+  const onGraphAndDatesOut = useCallback((e: PointerEvent) => {
+    const graphAndDatesBlock = graphAndDatesBlockRef.current;
+    const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
+
+    if (!nextElem && graphAndDatesBlock) {
+      graphAndDatesBlock.removeEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesBlock.removeEventListener('pointerout', onGraphAndDatesOut);
+
+      setIsTipActive(false);
+    }
+  }, [onGraphAndDatesMove]);
+
+  const onGraphAndDatesOver = useCallback<PointerEventHandler<HTMLDivElement>>((e) => {
+    const graphAndDatesBlock = graphAndDatesBlockRef.current;
+    const { clientX, pointerType, pointerId } = e;
+
+    if (!graphAndDatesBlock || pointerType !== 'mouse' || !clientX || !svgMetrics) return;
+
+    const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
+
+    if (!prevElem) {
+      const currentSvgX = clientX - svgMetrics.pageX;
+      const newIndex = inferNewActiveStatsIndex(currentSvgX);
+
+      setActiveStatsIndex(newIndex!);
+      setIsTipActive(true);
+
+      graphAndDatesBlock.setPointerCapture(pointerId);
+
+      graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesBlock.addEventListener('pointerout', onGraphAndDatesOut);
+    }
+  }, [inferNewActiveStatsIndex, onGraphAndDatesMove, onGraphAndDatesOut, svgMetrics]);
+
+  const onGraphAndDatesUp = useCallback(() => {
+    const graphAndDatesBlock = graphAndDatesBlockRef.current;
+
+    if (!graphAndDatesBlock) return;
+
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
+
+    graphAndDatesBlock.removeEventListener('pointermove', onGraphAndDatesMove);
+    graphAndDatesBlock.removeEventListener('pointerup', onGraphAndDatesUp);
+
+    setIsTipActive(false);
+  }, [onGraphAndDatesMove]);
+
+  const onGraphAndDatesDown = useCallback<PointerEventHandler<HTMLDivElement>>((e) => {
+    const graphAndDatesBlock = graphAndDatesBlockRef.current;
+    const { clientX, pointerType, pointerId } = e;
+
+    if (graphAndDatesBlock && clientX && svgMetrics && pointerType !== 'mouse') {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+
+      const currentSvgX = clientX - svgMetrics.pageX;
+      const newIndex = inferNewActiveStatsIndex(currentSvgX);
+
+      setActiveStatsIndex(newIndex!);
+      setIsTipActive(true);
+
+      graphAndDatesBlock.setPointerCapture(pointerId);
+
+      graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesBlock.addEventListener('pointerup', onGraphAndDatesUp);
+    }
+  }, [inferNewActiveStatsIndex, onGraphAndDatesMove, onGraphAndDatesUp, svgMetrics]);
+
   return (
     <div
+      ref={graphAndDatesBlockRef}
       id="graphAndDatesBlock"
-      className="relative w-full h-full flex flex-col justify-start items-start gap-[16px]"
-      onMouseOver={onGraphAndDatesOver}
-      onMouseMove={onGraphAndDatesHover}
-      onMouseOut={onGraphAndDatesOut}
+      className="relative w-full h-full flex flex-col justify-start items-start gap-[16px] touch-none"
+      onFocus={onGraphAndDatesFocus}
+      onBlur={onGraphAndDatesBlur}
+      onKeyDown={onGraphAndDatesKeyDown}
+      onPointerOver={onGraphAndDatesOver}
+      onPointerDown={onGraphAndDatesDown}
+      tabIndex={0}
     >
       <CurrentStatsTip
         isActive={isTipActive}

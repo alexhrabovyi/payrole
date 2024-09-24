@@ -397,5 +397,3 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 };
 
 export default PaymentHistory;
-
-// revise all code to optimize

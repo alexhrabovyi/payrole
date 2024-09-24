@@ -8,7 +8,7 @@ import RevenueIcon from './imgs/revenue_icon.svg';
 
 interface StatsTipProps {
   isActive: boolean
-  tipConfig: TipConfig | null,
+  tipConfig: TipConfig | undefined,
 }
 
 interface TipMetrics {
