@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex */
 import { KeyboardEventHandler, PointerEventHandler, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import useOnResize from '@/hooks/useOnResize';
@@ -75,6 +77,8 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
   const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [isTipActive, setIsTipActive] = useState(false);
   const [activeStatsIndex, setActiveStatsIndex] = useState(0);
+
+  const STATS_TIP_ID = 'statsTip';
 
   const calcSvgMetric = useCallback(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -559,8 +563,6 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     return newTipConfig;
   }, [activeStatsIndex, statsCoords, svgMetrics]);
 
-  // event functions
-
   const inferNewActiveStatsIndex = useCallback((x: number) => {
     if (!statsCoords || !XStep) return;
 
@@ -737,8 +739,12 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       onPointerOver={onGraphAndDatesOver}
       onPointerDown={onGraphAndDatesDown}
       tabIndex={0}
+      aria-label="This is a chart for the chosen period.
+        You can use keyboard arrows and other keys to change day which payment information is displayed for."
+      aria-describedby={STATS_TIP_ID}
     >
       <CurrentStatsTip
+        id={STATS_TIP_ID}
         isActive={isTipActive}
         tipConfig={tipConfig}
       />

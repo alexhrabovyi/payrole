@@ -27,6 +27,10 @@ const DateRangeButton: React.FC<ButtonProps> = ({
     '1Y': 'Show payment history chart for the last year',
   };
 
+  function onClick() {
+    if (activeButton !== dateBtnType) setActiveButton(dateBtnType);
+  }
+
   return (
     <button
       type="button"
@@ -34,9 +38,10 @@ const DateRangeButton: React.FC<ButtonProps> = ({
         btnStandartClassname,
         activeButton === dateBtnType ? btnActiveClassName : btnInactiveClassName,
       )}
-      disabled={activeButton === dateBtnType}
+      onClick={onClick}
+      role="radio"
+      aria-checked={dateBtnType === activeButton}
       aria-label={ariaLabelText[dateBtnType]}
-      onClick={() => setActiveButton(dateBtnType)}
     >
       {children}
     </button>

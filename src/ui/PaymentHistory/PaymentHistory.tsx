@@ -225,7 +225,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     const totalAmount = currentPeriodFormattedPaymentStats.reduce((t, c) => t += c.amount, 0);
 
     const formattedTotalAmount = formatAmount(totalAmount);
-    const integer = `$${formattedTotalAmount.match(/(\d+,)?(\d+)/)![0]}` || '';
+    const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)![0]}` || '';
     const float = formattedTotalAmount.match(/\.\d\d/)?.[0] || '';
 
     return {
@@ -262,8 +262,9 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 
     const previousPeriodStats = paymentStats.slice(startIndex, endIndex);
     const previousPeriodAmount = previousPeriodStats.reduce((t, s) => t += Number(s.amount), 0);
-    const newComparePercent = Number((((currentPeriodTotalAmount.totalAmount
-      / previousPeriodAmount) * 100) - 100).toFixed(0));
+
+    const newComparePercent = Number((((currentPeriodTotalAmount.totalAmount - previousPeriodAmount)
+      / Math.abs(previousPeriodAmount)) * 100).toFixed(0));
 
     return newComparePercent;
   }, [activeDateRangeBtn, currentPeriodTotalAmount]);
@@ -290,6 +291,9 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 
     return newCompareText;
   }, [activeDateRangeBtn]);
+
+  const currentPeriodAmountLabelText = `$${currentPeriodTotalAmount.totalAmount.toFixed(2)} is total amount for the chosen period of time. 
+    It's ${comparePercent}% ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
 
   const fullScreenButtonOnClick = useCallback(() => {
     const paymentComponent = paymentComponentRef.current;
@@ -328,7 +332,11 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
             Payment History
           </h2>
           <div className="flex justify-start items-center gap-[40px]">
-            <div className="flex justify-start items-center gap-[8px]">
+            <div
+              className="flex justify-start items-center gap-[8px]"
+              role="radiogroup"
+              aria-label="Choose period which payment history chart will be shown for"
+            >
               <DateRangeButton
                 dateBtnType="1M"
                 activeButton={activeDateRangeBtn}
@@ -362,13 +370,20 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
               type="button"
               className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
               onClick={fullScreenButtonOnClick}
+              aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on the fullscreen'}
             >
               {isFullScreenOn ? <FullScreenOffIcon className="hover:scale-[0.8] transition-standart" />
                 : <FullScreenOnIcon className="hover:scale-[1.2] transition-standart" />}
             </button>
           </div>
         </div>
-        <div className="flex flex-col justify-start items-start gap-[10px]">
+        <div
+          className="flex flex-col justify-start items-start gap-[10px]"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-busy={!formattedAllPaymentStats}
+          aria-label={currentPeriodAmountLabelText}
+        >
           <p className="font-tthoves font-medium text-[42px] text-darkBlue">
             {currentPeriodTotalAmount.integer}
             <span className="text-[32px] text-grey-400">

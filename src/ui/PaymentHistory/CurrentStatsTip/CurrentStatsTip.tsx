@@ -7,6 +7,7 @@ import { TipConfig } from '../GraphAndDates/GraphAndDates';
 import RevenueIcon from './imgs/revenue_icon.svg';
 
 interface StatsTipProps {
+  id: string,
   isActive: boolean
   tipConfig: TipConfig | undefined,
 }
@@ -32,7 +33,7 @@ interface StyleParams {
   verticalLinePath: string,
 }
 
-const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
+const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) => {
   const TRIANGLE_LONG_SIDE = 12;
   const TRIANGLE_SHORT_SIDE = 9;
   const GAP_BETWEEN_TRIANGLE_AND_CIRCLE = 6;
@@ -208,6 +209,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
         <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
       </span>
       <div
+        id={id}
         className="absolute w-auto  transition-[left_top_opacity] duration-150 ease-in-out"
         style={{
           left: `${styleParams.tipXCoord}px`,
@@ -215,6 +217,10 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
           opacity: isActive ? '1' : '0',
           pointerEvents: isActive ? 'all' : 'none',
         }}
+        role="tooltip"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-busy={!tipConfig}
       >
         <div
           ref={tipRef}
@@ -227,7 +233,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ isActive, tipConfig }) => {
           <div className="w-full flex justify-start items-center gap-[8px] p-[8px] rounded-[8px] bg-[#F3F4F7]">
             <RevenueIcon className="w-[24px] h-auto" />
             <p className="font-tthoves font-medium text-[14px] text-grey-500">
-              {(tipConfig?.amount || 0) >= 0 ? 'Profit' : 'Lesion'}
+              {(tipConfig?.amount || 0) >= 0 ? 'Profit' : 'Loss'}
             </p>
             <p className="font-tthoves font-medium text-[16px] text-darkBlue">
               {amount}
