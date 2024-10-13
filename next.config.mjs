@@ -24,6 +24,10 @@ const nextConfig = {
 
     fileLoaderRule.exclude = /\.svg$/i;
 
+    config.watchOptions = {
+      ignored: ['**/*.test.[js|jsx|ts|tsx]', '**/__tests__/**'],
+    };
+
     return config;
   },
 };

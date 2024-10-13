@@ -8,6 +8,8 @@
 
 # testing
 /coverage
+/.swc
+/test_report
 
 # next.js
 /.next/

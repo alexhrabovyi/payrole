@@ -2,7 +2,7 @@ import {
   useCallback, useMemo, useRef,
 } from 'react';
 
-import formatAmount from '@/libs/formatAmount';
+import formatAmount from '@/libs/formatAmount/formatAmount';
 import { TipConfig } from '../GraphAndDates/GraphAndDates';
 import RevenueIcon from './imgs/revenue_icon.svg';
 

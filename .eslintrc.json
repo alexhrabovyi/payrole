@@ -13,6 +13,7 @@
     "React": true
   },
   "rules": {
+    "import/no-extraneous-dependencies": "off",
     "object-curly-newline": "off",
     "consistent-return": "off",
     "no-param-reassign": "off",
@@ -66,6 +67,7 @@
   },
   "ignorePatterns": [
     ".next",
-    "node_modules"
+    "node_modules",
+    "jest.config.js"
   ]
 }

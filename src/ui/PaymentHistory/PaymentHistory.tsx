@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, TransitionEventHandler, useCallback, useMemo, useRef, useState } from 'react';
-import formatAmount from '@/libs/formatAmount';
+import formatAmount from '@/libs/formatAmount/formatAmount';
 
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
