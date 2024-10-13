@@ -1,10 +1,9 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
-import { KeyboardEventHandler, PointerEventHandler, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardEventHandler, PointerEventHandler, useCallback, useMemo, useRef, useState } from 'react';
 
-import useOnResize from '@/hooks/useOnResize';
 import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionHistories/PaymentAndTransactionHistories';
-import { FormattedPaymentStats } from '../PaymentHistory';
+import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
 
 import CurrentStatsTip from '../CurrentStatsTip/CurrentStatsTip';
 
@@ -64,33 +63,31 @@ interface PrevAdditionalCoords {
 interface GraphAndDatesProps {
   paymentStats: FormattedPaymentStats[];
   isFullScreenOn: boolean,
-  parentMetrics: PaymentAndTransactionMetrics | null;
+  wrapperMetrics: PaymentAndTransactionMetrics | null;
 }
 
 const GraphAndDates: React.FC<GraphAndDatesProps> = ({
-  paymentStats, isFullScreenOn, parentMetrics,
+  paymentStats, isFullScreenOn, wrapperMetrics,
 }) => {
   const graphAndDatesBlockRef = useRef<HTMLDivElement | null>(null);
   const svgWrapperRef = useRef<null | HTMLDivElement>(null);
-  const svgRef = useRef<null | SVGSVGElement>(null);
 
-  const [svgMetrics, setSvgMetrics] = useState<SvgMetrics | null>(null);
   const [isTipActive, setIsTipActive] = useState(false);
   const [activeStatsIndex, setActiveStatsIndex] = useState(0);
 
   const STATS_TIP_ID = 'statsTip';
 
-  const calcSvgMetric = useCallback(() => {
+  const svgMetrics = useMemo<SvgMetrics | undefined>(() => {
     const svgWrapper = svgWrapperRef.current;
 
-    if (!svgWrapper || !parentMetrics) return;
+    if (!svgWrapper || !wrapperMetrics) return;
 
     let width: number;
 
     if (isFullScreenOn) {
-      width = parentMetrics.width;
+      width = wrapperMetrics.width;
     } else {
-      width = (parentMetrics.width - parentMetrics.colGap) / 2;
+      width = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
     }
 
     const height = svgWrapper.offsetHeight;
@@ -99,30 +96,13 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     const pageX = windowX + window.scrollX;
     const pageY = windowY + window.scrollY;
 
-    setSvgMetrics({
+    return {
       width,
       height,
       pageX,
       pageY,
-    });
-  }, [isFullScreenOn, parentMetrics]);
-
-  useLayoutEffect(calcSvgMetric, [calcSvgMetric]);
-  useOnResize(calcSvgMetric);
-
-  const setupSVGElem = useCallback(() => {
-    const svgEl = svgRef.current;
-
-    if (!svgEl || !svgMetrics) return;
-
-    const svgWidth = svgMetrics.width;
-    const svgHeight = svgMetrics.height;
-
-    svgEl.setAttribute('width', String(svgWidth));
-    svgEl.setAttribute('height', String(svgHeight));
-  }, [svgMetrics]);
-
-  useLayoutEffect(setupSVGElem, [setupSVGElem]);
+    };
+  }, [isFullScreenOn, wrapperMetrics]);
 
   const statsCoordsAndGraphElemsAndStepX = useMemo(() => {
     const STROKE_PROPS: StrokeProps = {
@@ -238,15 +218,10 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       );
     }
 
-    const svgEl = svgRef.current;
-
-    if (!svgEl || !svgMetrics) return;
+    if (!svgMetrics) return;
 
     const svgWidth = svgMetrics.width;
     const svgHeight = svgMetrics.height;
-
-    svgEl.setAttribute('width', String(svgWidth));
-    svgEl.setAttribute('height', String(svgHeight));
 
     const allAmounts = paymentStats.map((p) => p.amount);
     const minAmount = Math.min(...allAmounts);
@@ -542,6 +517,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     return newDateElems;
   }, [isFullScreenOn, statsCoords, svgMetrics]);
 
+  // when current period changes, tipconfig rendering takes too much time
   const tipConfig = useMemo(() => {
     if (!statsCoords || !svgMetrics) return;
 
@@ -586,14 +562,17 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     }
   }, [XStep, statsCoords]);
 
+  // useCallback might be unnecessary there
   const onGraphAndDatesFocus = useCallback(() => {
     setIsTipActive(true);
   }, []);
 
+  // useCallback might be unnecessary there
   const onGraphAndDatesBlur = useCallback(() => {
     setIsTipActive(false);
   }, []);
 
+  // useCallback might be unnecessary there
   const onGraphAndDatesKeyDown = useCallback<KeyboardEventHandler<HTMLDivElement>>((e) => {
     if (!statsCoords) return;
 
@@ -753,7 +732,6 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
         className="w-full h-full max-h-[265px]"
       >
         <svg
-          ref={svgRef}
           className="w-full h-full"
           version="1.1"
           xmlns="http://www.w3.org/2000/svg"
@@ -779,3 +757,5 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 };
 
 export default GraphAndDates;
+
+// when all values negative there is a bug (screenshot is in tg)

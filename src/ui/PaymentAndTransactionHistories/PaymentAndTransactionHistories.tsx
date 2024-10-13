@@ -17,13 +17,13 @@ interface ComponentProps {
   commonClassName: string,
 }
 
-const PaymentAndTransactionHistories: React.FC<ComponentProps> = ({ commonClassName }) => {
+const PaymentAndTransactionHistWrapper: React.FC<ComponentProps> = ({ commonClassName }) => {
   const paymentAndHistoryRef = useRef<HTMLDivElement | null>(null);
 
   const [isPaymentFullScreenOn, setIsPaymentFullScreenOn] = useState(false);
-  const [metrics, setMetrics] = useState<PaymentAndTransactionMetrics | null>(null);
+  const [wrapperMetrics, setWrapperMetrics] = useState<PaymentAndTransactionMetrics | null>(null);
 
-  const updateMetrics = useCallback(() => {
+  const inferWrapperMetrics = useCallback(() => {
     const paymentAndHistory = paymentAndHistoryRef.current;
 
     if (!paymentAndHistory) return;
@@ -42,7 +42,7 @@ const PaymentAndTransactionHistories: React.FC<ComponentProps> = ({ commonClassN
       oneRowHeight = totalHeight;
     }
 
-    setMetrics({
+    setWrapperMetrics({
       width,
       height: oneRowHeight,
       colGap,
@@ -50,10 +50,10 @@ const PaymentAndTransactionHistories: React.FC<ComponentProps> = ({ commonClassN
     });
   }, [isPaymentFullScreenOn]);
 
-  useLayoutEffect(updateMetrics, [updateMetrics]);
-  useOnResize(updateMetrics);
+  useLayoutEffect(inferWrapperMetrics, [inferWrapperMetrics]);
+  useOnResize(inferWrapperMetrics);
 
-  let className = `col-[1_/_3] relative ${commonClassName}`;
+  let className = `relative col-[1_/_3] ${commonClassName}`;
 
   if (isPaymentFullScreenOn) className += ' grid-rows-[1fr_1fr]';
 
@@ -65,14 +65,14 @@ const PaymentAndTransactionHistories: React.FC<ComponentProps> = ({ commonClassN
       <PaymentHistory
         isFullScreenOn={isPaymentFullScreenOn}
         setIsFullScreenOn={setIsPaymentFullScreenOn}
-        wrapperMetrics={metrics}
+        wrapperMetrics={wrapperMetrics}
       />
       <TransactionHistory
         isPaymentFullScreenOn={isPaymentFullScreenOn}
-        wrapperMetrics={metrics}
+        wrapperMetrics={wrapperMetrics}
       />
     </div>
   );
 };
 
-export default PaymentAndTransactionHistories;
+export default PaymentAndTransactionHistWrapper;

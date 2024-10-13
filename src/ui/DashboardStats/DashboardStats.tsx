@@ -1,15 +1,16 @@
+import { FC, SVGProps } from 'react';
 import CollectedIcon from './imgs/collected.svg';
 import PaidIcon from './imgs/paid.svg';
 import PendingIcon from './imgs/pending.svg';
 import PendingSumIcon from './imgs/pending_sum.svg';
 
 interface StatsProps {
-  type: 'total' | 'pending',
+  readonly type: 'total' | 'pending',
 }
 
 const DashboardStats: React.FC<StatsProps> = ({ type }) => {
-  let FirstIcon;
-  let SecondIcon;
+  let FirstIcon: FC<SVGProps<SVGElement>>;
+  let SecondIcon: FC<SVGProps<SVGElement>>;
 
   let firstTitle: string;
   let secondTitle: string;

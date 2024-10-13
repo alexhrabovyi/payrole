@@ -9,19 +9,21 @@ import NavLink from '@/ui/SideNav/NavLink/NavLink';
 import BurgerButton from './BurgerButton/BurgerButton';
 
 export default function SideNav() {
-  const [windowWidth, setWindowWidth] = useState<number>(0);
+  const [windowWidth, setWindowWidth] = useState<number | null>(null);
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
 
+  // this value should be set in LayoutContainer component
   const PX_FROM_WHICH_STATIC_BEHAVIOUR = 1280;
 
-  const inferWindowWidth = useCallback(() => {
+  const inferAndSetWindowWidth = useCallback(() => {
     setWindowWidth(window.innerWidth);
   }, []);
 
-  useLayoutEffect(inferWindowWidth);
-  useOnResize(inferWindowWidth);
+  useLayoutEffect(inferAndSetWindowWidth);
+  useOnResize(inferAndSetWindowWidth);
 
-  if (windowWidth >= PX_FROM_WHICH_STATIC_BEHAVIOUR) {
+  if (windowWidth === null || windowWidth >= PX_FROM_WHICH_STATIC_BEHAVIOUR) {
+    // width percent value should also be set in LayoutContainer component
     return (
       <div>
         <nav className="fixed top-0 left-0 min-w-[220px] w-[14.58%] h-full border-solid border-r-[1px] border-grey-200 px-[25px] xl:px-[1.3%] py-[32px]
@@ -45,6 +47,8 @@ export default function SideNav() {
     );
   }
 
+  // check z-index prop among other component to define comprehensible ierarchy of z-index using
+  // logo on mobile devices should be in the centre
   return (
     <div className="fixed top-0 left-0 z-[100] w-full h-auto px-[15px] flex justify-start items-center gap-[10px] bg-white shadow-[0_4px_4px_0_rgba(0,0,0,0.25)]">
       <BurgerButton
@@ -54,7 +58,6 @@ export default function SideNav() {
       <Logo
         widthCls="w-[160px]"
       />
-      <span />
     </div>
   );
 }

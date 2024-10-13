@@ -95,6 +95,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
       circleXCoord = statX - circleWidth / 2;
       circleYCoord = statY - circleHeight / 2;
 
+      // stat - verticalLineWidth, it could be in a variable
       verticalLineX = statX - 1;
       verticalLineY = 0;
       verticalLineHeight = svgHeight;
@@ -149,7 +150,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
         tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
           + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
 
-        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
+        triangleXCoord = tipWidth / 2 - TRIANGLE_LONG_SIDE / 2;
         triangleYCoord = tipHeight;
         triangleClassName += ' translate-y-[-20%]';
       }
@@ -210,7 +211,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
       </span>
       <div
         id={id}
-        className="absolute w-auto  transition-[left_top_opacity] duration-150 ease-in-out"
+        className="absolute w-auto transition-[left_top_opacity] duration-150 ease-in-out"
         style={{
           left: `${styleParams.tipXCoord}px`,
           top: `${styleParams.tipYCoord}px`,
@@ -225,7 +226,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
         <div
           ref={tipRef}
           className={`relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] 
-        p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]`}
+            p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]`}
         >
           <p className="font-tthoves font-medium text-[14px] text-grey-500">
             {dateStr}

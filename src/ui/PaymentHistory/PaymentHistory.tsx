@@ -186,11 +186,11 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       };
     }
 
-    const statsObj = paymentStats.slice(366);
+    const last366DaysStatObjs = paymentStats.slice(366);
 
     const formattedPaymentStats: FormattedPaymentStats[] = [];
 
-    statsObj.forEach((s) => {
+    last366DaysStatObjs.forEach((s) => {
       const dateInfo = divideDate(s.date);
 
       formattedPaymentStats.push({
@@ -271,6 +271,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 
   const comparePercentStr = comparePercent >= 0 ? `+${comparePercent}%` : `${comparePercent}%`;
 
+  // useMemo isn't necessary there
   const compareText = useMemo(() => {
     let newCompareText: CompareText;
 
@@ -295,6 +296,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
   const currentPeriodAmountLabelText = `$${currentPeriodTotalAmount.totalAmount.toFixed(2)} is total amount for the chosen period of time. 
     It's ${comparePercent}% ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
 
+  // memoization is not necessary there
   const fullScreenButtonOnClick = useCallback(() => {
     const paymentComponent = paymentComponentRef.current;
 
@@ -310,6 +312,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
   let mainDivClassName = 'min-h-[500px] flex flex-col justify-start items-start gap-[10px] border-grey';
   if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
 
+  // memoization is not necessary there
   const paymentComponentOnTransitionEnd = useCallback<TransitionEventHandler<
     HTMLDivElement>>((e) => {
       (e.target as HTMLElement).style.transitionDuration = '';
@@ -370,7 +373,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
               type="button"
               className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
               onClick={fullScreenButtonOnClick}
-              aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on the fullscreen'}
+              aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on fullscreen'}
             >
               {isFullScreenOn ? <FullScreenOffIcon className="hover:scale-[0.8] transition-standart" />
                 : <FullScreenOnIcon className="hover:scale-[1.2] transition-standart" />}
@@ -405,7 +408,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       <GraphAndDates
         paymentStats={currentPeriodFormattedPaymentStats}
         isFullScreenOn={isFullScreenOn}
-        parentMetrics={wrapperMetrics}
+        wrapperMetrics={wrapperMetrics}
       />
     </div>
   );

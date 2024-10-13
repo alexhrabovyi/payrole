@@ -24,6 +24,7 @@ export default function formatAmount(a: number) {
 
   let shift = 0;
 
+  // probably i could start from 3, and step could be += 3 or += 3 + shift
   for (let i = 1; i < formatedAmount.length; i += 1) {
     if (i % 3 === 0 && formatedAmount[i + shift]) {
       formatedAmount.splice(i + shift, 0, ',');

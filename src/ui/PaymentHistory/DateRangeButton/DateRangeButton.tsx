@@ -3,10 +3,10 @@ import clsx from 'clsx';
 import { ActiveDateRange } from '../PaymentHistory';
 
 interface ButtonProps {
-  dateBtnType: ActiveDateRange,
-  activeButton: ActiveDateRange,
-  setActiveButton: Dispatch<SetStateAction<ActiveDateRange>>,
-  children: React.ReactNode,
+  readonly dateBtnType: ActiveDateRange,
+  readonly activeButton: ActiveDateRange,
+  readonly setActiveButton: Dispatch<SetStateAction<ActiveDateRange>>,
+  readonly children: React.ReactNode,
 }
 
 const DateRangeButton: React.FC<ButtonProps> = ({

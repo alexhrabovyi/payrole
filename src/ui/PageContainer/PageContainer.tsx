@@ -1,5 +1,5 @@
 interface ContainerProps {
-  children: React.ReactNode | React.ReactNode[],
+  readonly children: React.ReactNode | React.ReactNode[],
 }
 
 const PageContainer: React.FC<ContainerProps> = ({ children }) => (

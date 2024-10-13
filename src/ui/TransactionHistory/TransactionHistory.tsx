@@ -8,8 +8,8 @@ import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionHistories/
 import avatarSrc from './imgs/avatar.png';
 
 interface TransactionHistoryProps {
-  isPaymentFullScreenOn: boolean,
-  wrapperMetrics: PaymentAndTransactionMetrics | null;
+  readonly isPaymentFullScreenOn: boolean,
+  readonly wrapperMetrics: PaymentAndTransactionMetrics | null;
 }
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = (

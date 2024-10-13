@@ -3,9 +3,9 @@ import { forwardRef } from 'react';
 type Ref = HTMLButtonElement;
 
 interface ButtonProps {
-  children: React.ReactNode | React.ReactNode[],
-  type?: React.ButtonHTMLAttributes<HTMLButtonElement>['type'],
-  classNames?: string | string[],
+  readonly children: React.ReactNode | React.ReactNode[],
+  readonly type?: React.ButtonHTMLAttributes<HTMLButtonElement>['type'],
+  readonly classNames?: string | string[],
 }
 
 const Button = forwardRef<Ref, ButtonProps>(
