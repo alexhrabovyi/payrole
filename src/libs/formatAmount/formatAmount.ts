@@ -22,14 +22,9 @@ export default function formatAmount(a: number) {
 
   formatedAmount = formatedAmount.split('').reverse();
 
-  let shift = 0;
-
-  // probably i could start from 3, and step could be += 3 or += 3 + shift
-  for (let i = 1; i < formatedAmount.length; i += 1) {
-    if (i % 3 === 0 && formatedAmount[i + shift]) {
-      formatedAmount.splice(i + shift, 0, ',');
-      shift += 1;
-    }
+  for (let i = 3; i < formatedAmount.length; i += 3) {
+    formatedAmount.splice(i, 0, ',');
+    i += 1;
   }
 
   if (isNegative) {

@@ -17,7 +17,7 @@ interface ComponentProps {
   commonClassName: string,
 }
 
-const PaymentAndTransactionHistWrapper: React.FC<ComponentProps> = ({ commonClassName }) => {
+const PaymentAndTransactionWrapper: React.FC<ComponentProps> = ({ commonClassName }) => {
   const paymentAndHistoryRef = useRef<HTMLDivElement | null>(null);
 
   const [isPaymentFullScreenOn, setIsPaymentFullScreenOn] = useState(false);
@@ -75,4 +75,4 @@ const PaymentAndTransactionHistWrapper: React.FC<ComponentProps> = ({ commonClas
   );
 };
 
-export default PaymentAndTransactionHistWrapper;
+export default PaymentAndTransactionWrapper;

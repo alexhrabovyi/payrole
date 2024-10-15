@@ -15,17 +15,7 @@ const config = {
     'cjs',
     'node',
   ],
-  // The root directory that Jest should scan for tests and modules within
-  // rootDir: undefined,
   testEnvironment: 'jsdom',
-  // The glob patterns Jest uses to detect test files
-  // testMatch: [
-  //   "**/__tests__/**/*.[jt]s?(x)",
-  //   "**/?(*.)+(spec|test).[tj]s?(x)"
-  // ],
-
-  // Indicates whether each individual test should be reported during the run
-  // verbose: undefined,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
@@ -41,11 +31,14 @@ const config = {
   ],
 
   // coverage
-  collectCoverage: true,
-  // An array of glob patterns indicating a set of files for which coverage
-  // information should be collected
-
-  // collectCoverageFrom: undefined,
+  collectCoverage: false,
+  collectCoverageFrom: [
+    './src/**/*.{js,jsx,ts,tsx}',
+    '!**/node_modules/**',
+    '!**/vendor/**',
+    '!**/.next/**',
+    '!**/.swc/**',
+  ],
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: [
     '/node_modules/',

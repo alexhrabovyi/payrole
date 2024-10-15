@@ -2,7 +2,7 @@
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
 import { KeyboardEventHandler, PointerEventHandler, useCallback, useMemo, useRef, useState } from 'react';
 
-import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionHistories/PaymentAndTransactionHistories';
+import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
 
 import CurrentStatsTip from '../CurrentStatsTip/CurrentStatsTip';
@@ -58,6 +58,15 @@ interface AddGraphPathsProps {
 interface PrevAdditionalCoords {
   x: number,
   y: number,
+}
+
+export function calcYCoord(
+  currentAmount: number,
+  minAmount: number,
+  Ystep: number,
+  maxYCoord: number,
+) {
+  return Math.abs((currentAmount - minAmount) * Ystep - maxYCoord);
 }
 
 interface GraphAndDatesProps {
@@ -124,15 +133,6 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
     function calcXCoord(indexInArray: number, Xstep: number) {
       return indexInArray * Xstep;
-    }
-
-    function calcYCoord(
-      currentAmount: number,
-      minAmount: number,
-      Ystep: number,
-      maxYCoord: number,
-    ) {
-      return Math.abs((currentAmount - minAmount) * Ystep - maxYCoord);
     }
 
     function checkAmountType(amount: number): AmountType {

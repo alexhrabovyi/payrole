@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import links from '@/libs/links';
-import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionHistories/PaymentAndTransactionHistories';
+import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 
 import avatarSrc from './imgs/avatar.png';
 

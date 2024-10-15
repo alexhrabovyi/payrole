@@ -1,10 +1,10 @@
-import { Dispatch, SetStateAction, TransitionEventHandler, useCallback, useMemo, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, TransitionEventHandler, useMemo, useRef, useState } from 'react';
 import formatAmount from '@/libs/formatAmount/formatAmount';
 
 import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 import GraphAndDates from './GraphAndDates/GraphAndDates';
-import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionHistories/PaymentAndTransactionHistories';
+import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 
 import FullScreenOnIcon from './images/on_fullscreen_icon.svg';
 import FullScreenOffIcon from './images/off_fullscreen_icon.svg';
@@ -32,6 +32,31 @@ interface FormattedTotalAmount {
   integer: string,
   float: string,
 }
+
+const MONTHS: Record<number, string> = {
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'May',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec',
+};
+
+const WEEKDAYS: Record<number, string> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+};
 
 function generateRandomStats(): PaymentStats[] {
   function generateRandomNum(min: number, max: number) {
@@ -113,30 +138,21 @@ function generateRandomStats(): PaymentStats[] {
 
 const paymentStats = generateRandomStats();
 
-const MONTHS: Record<number, string> = {
-  1: 'Jan',
-  2: 'Feb',
-  3: 'Mar',
-  4: 'Apr',
-  5: 'May',
-  6: 'Jun',
-  7: 'Jul',
-  8: 'Aug',
-  9: 'Sep',
-  10: 'Oct',
-  11: 'Nov',
-  12: 'Dec',
-};
+export function calcCurrentPeriodTotalAmount(
+  formattedPaymentStats: FormattedPaymentStats[],
+): FormattedTotalAmount {
+  const totalAmount = +formattedPaymentStats.reduce((t, c) => t += c.amount, 0).toFixed(2);
 
-const WEEKDAYS: Record<number, string> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+  const formattedTotalAmount = formatAmount(totalAmount);
+  const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)![0]}` || '';
+  const float = formattedTotalAmount.match(/\.\d\d/)?.[0] || '';
+
+  return {
+    totalAmount,
+    integer,
+    float,
+  };
+}
 
 interface PaymentHistoryProps {
   isFullScreenOn: boolean,
@@ -221,19 +237,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     return currentPaymentStats;
   }, [activeDateRangeBtn, formattedAllPaymentStats]);
 
-  const currentPeriodTotalAmount = useMemo<FormattedTotalAmount>(() => {
-    const totalAmount = currentPeriodFormattedPaymentStats.reduce((t, c) => t += c.amount, 0);
-
-    const formattedTotalAmount = formatAmount(totalAmount);
-    const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)![0]}` || '';
-    const float = formattedTotalAmount.match(/\.\d\d/)?.[0] || '';
-
-    return {
-      totalAmount,
-      integer,
-      float,
-    };
-  }, [currentPeriodFormattedPaymentStats]);
+  const currentPeriodTotalAmount = useMemo(
+    () => calcCurrentPeriodTotalAmount(currentPeriodFormattedPaymentStats),
+    [currentPeriodFormattedPaymentStats],
+  );
 
   const comparePercent = useMemo(() => {
     const formattedStatsQuantity = paymentStats.length;
@@ -271,8 +278,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 
   const comparePercentStr = comparePercent >= 0 ? `+${comparePercent}%` : `${comparePercent}%`;
 
-  // useMemo isn't necessary there
-  const compareText = useMemo(() => {
+  const compareText = (() => {
     let newCompareText: CompareText;
 
     switch (activeDateRangeBtn) {
@@ -291,13 +297,12 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     }
 
     return newCompareText;
-  }, [activeDateRangeBtn]);
+  })();
 
-  const currentPeriodAmountLabelText = `$${currentPeriodTotalAmount.totalAmount.toFixed(2)} is total amount for the chosen period of time. 
+  const currentPeriodAmountLabelText = `$${currentPeriodTotalAmount.totalAmount} is total amount for the chosen period of time. 
     It's ${comparePercent}% ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
 
-  // memoization is not necessary there
-  const fullScreenButtonOnClick = useCallback(() => {
+  function fullScreenButtonOnClick() {
     const paymentComponent = paymentComponentRef.current;
 
     if (!paymentComponent) return;
@@ -307,18 +312,16 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     paymentComponent.style.transitionTimingFunction = 'ease-in-out';
 
     setIsFullScreenOn((currentState) => !currentState);
-  }, [paymentComponentRef, setIsFullScreenOn]);
+  }
 
   let mainDivClassName = 'min-h-[500px] flex flex-col justify-start items-start gap-[10px] border-grey';
   if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
 
-  // memoization is not necessary there
-  const paymentComponentOnTransitionEnd = useCallback<TransitionEventHandler<
-    HTMLDivElement>>((e) => {
-      (e.target as HTMLElement).style.transitionDuration = '';
-      (e.target as HTMLElement).style.transitionProperty = '';
-      (e.target as HTMLElement).style.transitionTimingFunction = '';
-    }, []);
+  const paymentComponentOnTransitionEnd: TransitionEventHandler<HTMLDivElement> = (e) => {
+    (e.target as HTMLElement).style.transitionDuration = '';
+    (e.target as HTMLElement).style.transitionProperty = '';
+    (e.target as HTMLElement).style.transitionTimingFunction = '';
+  };
 
   return (
     <div
