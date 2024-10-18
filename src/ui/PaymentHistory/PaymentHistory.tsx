@@ -5,6 +5,7 @@ import Badge from '@/ui/Badge/Badge';
 import DateRangeButton from './DateRangeButton/DateRangeButton';
 import GraphAndDates from './GraphAndDates/GraphAndDates';
 import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
+import mockedPaymentStats from './paymentStats.mock.json';
 
 import FullScreenOnIcon from './images/on_fullscreen_icon.svg';
 import FullScreenOffIcon from './images/off_fullscreen_icon.svg';
@@ -13,7 +14,7 @@ export type ActiveDateRange = '1M' | '3M' | '6M' | '1Y';
 
 type CompareText = 'vs last month' | 'vs last 3 months' | 'vs last 6 months' | 'vs last year';
 
-interface PaymentStats {
+export interface PaymentStats {
   date: string,
   amount: string,
 }
@@ -58,93 +59,35 @@ const WEEKDAYS: Record<number, string> = {
   6: 'Saturday',
 };
 
-function generateRandomStats(): PaymentStats[] {
-  function generateRandomNum(min: number, max: number) {
-    return Math.random() * (max - min + 1) + min;
-  }
+const paymentStats: PaymentStats[] = mockedPaymentStats;
 
-  function createStatsObj(amount: string, year: number, month: number, day: number): PaymentStats {
-    return {
-      amount,
-      date: `${month + 1}-${day}-${year}`,
-    };
-  }
+export function divideDate(dateStr: string) {
+  const splittedDate = dateStr.split('-');
 
-  const MIN_AMOUNT = -3500;
-  const MAX_AMOUNT = 3500;
+  const day = Number(splittedDate[1]);
+  const monthNum = Number(splittedDate[0]);
+  const month = MONTHS[monthNum];
+  const year = Number(splittedDate[2]);
 
-  let currentMinAmount = MIN_AMOUNT;
-  let currentMaxAmount = MAX_AMOUNT;
+  const dateObj = new Date(year, monthNum - 1, day);
+  const weekday = WEEKDAYS[dateObj.getDay()];
 
-  const currentDate = new Date();
-  const currentDay = currentDate.getDate();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
-
-  const arrOfPaymentStats: PaymentStats[] = [];
-
-  let strick = 0;
-
-  for (let i = 731; i >= 0; i -= 1) {
-    const randomNum = generateRandomNum(currentMinAmount, currentMaxAmount);
-
-    if (randomNum >= 0) {
-      strick += 1;
-    } else {
-      strick -= 1;
-    }
-
-    if (strick > 8) {
-      strick = 0;
-      currentMinAmount = randomNum - 700;
-      currentMaxAmount = randomNum - 200;
-    } else if (strick < -8) {
-      strick = 0;
-      currentMinAmount = randomNum + 200;
-      currentMaxAmount = randomNum + 700;
-    } else {
-      const isRising = Math.random() >= 0.5;
-
-      if (isRising) {
-        currentMinAmount = randomNum;
-        currentMaxAmount = randomNum + 500;
-      } else {
-        currentMaxAmount = randomNum;
-        currentMinAmount = randomNum - 500;
-      }
-
-      if (currentMinAmount < MIN_AMOUNT) {
-        currentMinAmount = MIN_AMOUNT;
-      }
-
-      if (currentMaxAmount > MAX_AMOUNT) {
-        currentMaxAmount = MAX_AMOUNT;
-      }
-    }
-
-    const fixedNum = randomNum.toFixed(2);
-
-    const prevDate = new Date(currentYear, currentMonth, currentDay - i);
-    const prevDay = prevDate.getDate();
-    const prevMonth = prevDate.getMonth();
-    const prevYear = prevDate.getFullYear();
-
-    const statsObj = createStatsObj(fixedNum, prevYear, prevMonth, prevDay);
-    arrOfPaymentStats.push(statsObj);
-  }
-
-  return arrOfPaymentStats;
+  return {
+    day,
+    month,
+    monthNum,
+    year,
+    weekday,
+  };
 }
 
-const paymentStats = generateRandomStats();
-
-export function calcCurrentPeriodTotalAmount(
+export function calcAndFormatCurrentPeriodTotalAmount(
   formattedPaymentStats: FormattedPaymentStats[],
 ): FormattedTotalAmount {
   const totalAmount = +formattedPaymentStats.reduce((t, c) => t += c.amount, 0).toFixed(2);
 
   const formattedTotalAmount = formatAmount(totalAmount);
-  const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)![0]}` || '';
+  const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)?.[0]}` || '';
   const float = formattedTotalAmount.match(/\.\d\d/)?.[0] || '';
 
   return {
@@ -154,10 +97,14 @@ export function calcCurrentPeriodTotalAmount(
   };
 }
 
+export function calcComparePercent(prevAmount: number, currentAmount: number) {
+  return +((((currentAmount - prevAmount) / Math.abs(prevAmount)) * 100).toFixed(0));
+}
+
 interface PaymentHistoryProps {
-  isFullScreenOn: boolean,
-  setIsFullScreenOn: Dispatch<SetStateAction<boolean>>
-  wrapperMetrics: PaymentAndTransactionMetrics | null,
+  readonly isFullScreenOn: boolean,
+  readonly setIsFullScreenOn: Dispatch<SetStateAction<boolean>>
+  readonly wrapperMetrics: PaymentAndTransactionMetrics | null,
 }
 
 const PaymentHistory: React.FC<PaymentHistoryProps> = (
@@ -182,26 +129,6 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
   }, [isFullScreenOn, wrapperMetrics]);
 
   const formattedAllPaymentStats = useMemo(() => {
-    function divideDate(dateStr: string) {
-      const splittedDate = dateStr.split('-');
-
-      const day = Number(splittedDate[1]);
-      const monthNum = Number(splittedDate[0]);
-      const month = MONTHS[monthNum];
-      const year = Number(splittedDate[2]);
-
-      const dateObj = new Date(year, monthNum - 1, day);
-      const weekday = WEEKDAYS[dateObj.getDay()];
-
-      return {
-        day,
-        month,
-        monthNum,
-        year,
-        weekday,
-      };
-    }
-
     const last366DaysStatObjs = paymentStats.slice(366);
 
     const formattedPaymentStats: FormattedPaymentStats[] = [];
@@ -238,28 +165,28 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
   }, [activeDateRangeBtn, formattedAllPaymentStats]);
 
   const currentPeriodTotalAmount = useMemo(
-    () => calcCurrentPeriodTotalAmount(currentPeriodFormattedPaymentStats),
+    () => calcAndFormatCurrentPeriodTotalAmount(currentPeriodFormattedPaymentStats),
     [currentPeriodFormattedPaymentStats],
   );
 
   const comparePercent = useMemo(() => {
-    const formattedStatsQuantity = paymentStats.length;
+    const paymentStatsQuantity = paymentStats.length;
 
     let startIndex = 0;
     let endIndex = 0;
 
     switch (activeDateRangeBtn) {
       case '1M':
-        startIndex = formattedStatsQuantity - 62;
-        endIndex = formattedStatsQuantity - 31;
+        startIndex = paymentStatsQuantity - 62;
+        endIndex = paymentStatsQuantity - 31;
         break;
       case '3M':
-        startIndex = formattedStatsQuantity - 186;
-        endIndex = formattedStatsQuantity - 93;
+        startIndex = paymentStatsQuantity - 186;
+        endIndex = paymentStatsQuantity - 93;
         break;
       case '6M':
-        startIndex = formattedStatsQuantity - 372;
-        endIndex = formattedStatsQuantity - 186;
+        startIndex = paymentStatsQuantity - 372;
+        endIndex = paymentStatsQuantity - 186;
         break;
       case '1Y':
         startIndex = 0;
@@ -269,9 +196,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
 
     const previousPeriodStats = paymentStats.slice(startIndex, endIndex);
     const previousPeriodAmount = previousPeriodStats.reduce((t, s) => t += Number(s.amount), 0);
-
-    const newComparePercent = Number((((currentPeriodTotalAmount.totalAmount - previousPeriodAmount)
-      / Math.abs(previousPeriodAmount)) * 100).toFixed(0));
+    const newComparePercent = calcComparePercent(
+      previousPeriodAmount,
+      currentPeriodTotalAmount.totalAmount,
+    );
 
     return newComparePercent;
   }, [activeDateRangeBtn, currentPeriodTotalAmount]);
@@ -377,6 +305,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
               className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
               onClick={fullScreenButtonOnClick}
               aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on fullscreen'}
+              data-testid="fullScreenButton"
             >
               {isFullScreenOn ? <FullScreenOffIcon className="hover:scale-[0.8] transition-standart" />
                 : <FullScreenOnIcon className="hover:scale-[1.2] transition-standart" />}

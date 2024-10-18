@@ -1,5 +1,3 @@
-import { describe, it, expect } from '@jest/globals';
-
 import formatAmount from './formatAmount';
 
 function testFactory(table: Array<[number, string]>) {

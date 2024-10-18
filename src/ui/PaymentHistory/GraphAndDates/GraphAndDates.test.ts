@@ -1,5 +1,3 @@
-import { describe, it, expect } from '@jest/globals';
-
 import { calcYCoord } from './GraphAndDates';
 
 describe('GraphAndDatesProps utility functions', () => {

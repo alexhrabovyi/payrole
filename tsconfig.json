@@ -34,7 +34,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "next.config.mjs",
-    "jest-setup.ts"
+    "jest-setup.ts",
+    "__mocks__/svg.js"
   ],
   "exclude": [
     "node_modules"
