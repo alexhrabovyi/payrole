@@ -29,8 +29,7 @@ const config = {
       }
     ]
   ],
-
-  // coverage
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   collectCoverage: false,
   collectCoverageFrom: [
     './src/**/*.{js,jsx,ts,tsx}',
