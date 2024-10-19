@@ -1,14 +1,12 @@
 /* eslint-disable indent */
-import { fireEvent, render, screen } from '@testing-library/react';
-import { useState } from 'react';
-
-import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
-import PaymentHistory, {
+import {
   calcAndFormatCurrentPeriodTotalAmount,
   FormattedPaymentStats,
   divideDate,
   calcComparePercent,
+  ActiveDateRange,
 } from './PaymentHistory';
+import PaymentHistoryPO from './PaymentHistory.po';
 
 function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[] {
   return numsArr.map<FormattedPaymentStats>((num) => ({
@@ -19,6 +17,45 @@ function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[]
     year: 2024,
     weekday: 'Monday',
   }));
+}
+
+function testRangeBtnsFabric(testName: string, btns: ActiveDateRange[]) {
+  function shouldBeChecked(testBtn: ActiveDateRange, testedBtn: ActiveDateRange) {
+    return testBtn === testedBtn ? 'true' : 'false';
+  }
+
+  it(testName, () => {
+    PaymentHistoryPO.render(true);
+
+    const rangeBtns = PaymentHistoryPO.getRangeBtns();
+    const totalAmountParagraph = PaymentHistoryPO.getTotalAmountParagraph();
+    const periodPercentBadge = PaymentHistoryPO.getPercentBadge();
+    const compareTextParagraph = PaymentHistoryPO.getCompareTextParagraph();
+
+    expect(rangeBtns['1M']).toHaveAttribute('aria-checked', 'true');
+    expect(rangeBtns['3M']).toHaveAttribute('aria-checked', 'false');
+    expect(rangeBtns['6M']).toHaveAttribute('aria-checked', 'false');
+    expect(rangeBtns['1Y']).toHaveAttribute('aria-checked', 'false');
+
+    expect(totalAmountParagraph).toHaveTextContent(PaymentHistoryPO.amountsPerPeriod['1M']);
+    expect(periodPercentBadge).toHaveTextContent(PaymentHistoryPO.percentPerPeriod['1M']);
+    expect(compareTextParagraph).toHaveTextContent(PaymentHistoryPO.compareTextPerPeriod['1M']);
+
+    btns.forEach((btn) => {
+      PaymentHistoryPO.clickOnRangeBtn(btn);
+
+      expect(rangeBtns['1M']).toHaveAttribute('aria-checked', shouldBeChecked('1M', btn));
+      expect(rangeBtns['3M']).toHaveAttribute('aria-checked', shouldBeChecked('3M', btn));
+      expect(rangeBtns['6M']).toHaveAttribute('aria-checked', shouldBeChecked('6M', btn));
+      expect(rangeBtns['1Y']).toHaveAttribute('aria-checked', shouldBeChecked('1Y', btn));
+
+      expect(totalAmountParagraph).toHaveTextContent(PaymentHistoryPO.amountsPerPeriod[btn]);
+      expect(periodPercentBadge).toHaveTextContent(PaymentHistoryPO.percentPerPeriod[btn]);
+      expect(compareTextParagraph).toHaveTextContent(
+        PaymentHistoryPO.compareTextPerPeriod[btn],
+      );
+    });
+  });
 }
 
 describe('PaymentHistory utility functions', () => {
@@ -125,44 +162,50 @@ describe('PaymentHistory utility functions', () => {
 
 describe('PaymentHistory function', () => {
   describe('toggle fullScreenButton', () => {
-    it('from off to on', () => {
-      const WrapperElement = () => {
-        const [isFullScreenOn, setIsFullScreenOn] = useState(false);
-        const wrapperMetrics: PaymentAndTransactionMetrics = {
-          width: 100,
-          height: 100,
-          colGap: 20,
-          rowGap: 20,
-        };
+    it('from off to on to off', () => {
+      PaymentHistoryPO.render();
 
-        return (
-          <PaymentHistory
-            isFullScreenOn={isFullScreenOn}
-            setIsFullScreenOn={setIsFullScreenOn}
-            wrapperMetrics={wrapperMetrics}
-          />
-        );
-      };
+      const fullScreenButton = PaymentHistoryPO.getFullScreenBtn();
+      const paymentHistory = PaymentHistoryPO.getPaymentHistory();
 
-      render(<WrapperElement />);
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
 
-      const fullScreenButton = screen.getByTestId('fullScreenButton');
+      PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', 'Show payment history chart on fullscreen');
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
 
-      fireEvent.click(screen.getByTestId('fullScreenButton'));
+      PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', 'Close fullscreen payment history chart');
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
     });
-    // it('from on to off', () => {
-    //   render(PaymentHistory as unknown as ReactNode);
-    //   const fullScreenButton = screen.getByTestId('fullScreenButton');
+    it('from on to off to on', () => {
+      PaymentHistoryPO.render(true);
 
-    //   expect(fullScreenButton).toHaveAttribute('aria-label', 'Show payment history chart on fullscreen');
+      const fullScreenButton = PaymentHistoryPO.getFullScreenBtn();
+      const paymentHistory = PaymentHistoryPO.getPaymentHistory();
 
-    //   fireEvent.click(screen.getByTestId('fullScreenButton'));
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
 
-    //   expect(fullScreenButton).toHaveAttribute('aria-label', 'Close fullscreen payment history chart');
-    // });
+      PaymentHistoryPO.clickOnFullScreenBtn();
+
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
+
+      PaymentHistoryPO.clickOnFullScreenBtn();
+
+      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
+      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
+    });
+  });
+
+  describe('toggle rangeButtons', () => {
+    testRangeBtnsFabric('from 1M to 3M to 1M', ['3M', '1M']);
+    testRangeBtnsFabric('from 1M to 6M to 1M', ['6M', '1M']);
+    testRangeBtnsFabric('from 1M to 1Y to 1M', ['1Y', '1M']);
+    testRangeBtnsFabric('from 1M to 3M to 6M to 1Y to 1M', ['3M', '6M', '1Y', '1M']);
   });
 });

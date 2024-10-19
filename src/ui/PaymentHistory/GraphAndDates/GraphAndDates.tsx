@@ -4,29 +4,28 @@ import { KeyboardEventHandler, PointerEventHandler, useCallback, useMemo, useRef
 
 import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
+import { calcMinMaxAmount, calcMinMaxCoords, calcXYSteps, createGraphElems, createStatsWithCoords } from './utils/graphAndDatesUtils';
 
 import CurrentStatsTip from '../CurrentStatsTip/CurrentStatsTip';
 
-type AmountType = 'negative' | 'positive';
-
-interface StatsCoords extends FormattedPaymentStats {
+export interface StatsWithCoords extends FormattedPaymentStats {
   x: number,
   y: number,
 }
 
-export interface TipConfig extends StatsCoords {
+export interface TipConfig extends StatsWithCoords {
   svgElWidth: number,
   svgElHeight: number,
 }
 
-interface SvgMetrics {
+export interface SvgMetrics {
   width: number,
   height: number,
   pageX: number,
   pageY: number,
 }
 
-interface StrokeProps {
+export interface StrokeProps {
   width: string,
   colorGreen: string,
   colorRed: string,
@@ -34,45 +33,16 @@ interface StrokeProps {
   strokeLinecap: 'butt' | 'square' | 'round'
 }
 
-interface FillProps {
+export interface FillProps {
   colorGreen: string,
   colorRed: string,
   opacity: string,
 }
 
-interface CalcNextAdditionalCoordsProps {
-  currentX: number,
-  nextX: number,
-  currentAmount: number,
-  nextAmount: number,
-  zeroLineYCoord: number,
-}
-
-interface AddGraphPathsProps {
-  pathsArr: React.ReactNode[],
-  color: 'colorGreen' | 'colorRed',
-  strokeStr: string,
-  fillStr: string,
-}
-
-interface PrevAdditionalCoords {
-  x: number,
-  y: number,
-}
-
-export function calcYCoord(
-  currentAmount: number,
-  minAmount: number,
-  Ystep: number,
-  maxYCoord: number,
-) {
-  return Math.abs((currentAmount - minAmount) * Ystep - maxYCoord);
-}
-
 interface GraphAndDatesProps {
-  paymentStats: FormattedPaymentStats[];
-  isFullScreenOn: boolean,
-  wrapperMetrics: PaymentAndTransactionMetrics | null;
+  readonly paymentStats: FormattedPaymentStats[];
+  readonly isFullScreenOn: boolean,
+  readonly wrapperMetrics: PaymentAndTransactionMetrics | null;
 }
 
 const GraphAndDates: React.FC<GraphAndDatesProps> = ({
@@ -85,6 +55,23 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
   const [activeStatsIndex, setActiveStatsIndex] = useState(0);
 
   const STATS_TIP_ID = 'statsTip';
+
+  const TOP_INDENT_PX = 60;
+  const BOTTOM_INDENT_PERCENT = 0.1;
+
+  const STROKE_PROPS = useMemo<StrokeProps>(() => ({
+    width: '2',
+    colorGreen: '#0AAF60',
+    colorRed: '#FA4545',
+    linejoin: 'round',
+    strokeLinecap: 'round',
+  }), []);
+
+  const FILL_PROPS = useMemo<FillProps>(() => ({
+    colorGreen: 'url(#greenGradient)',
+    colorRed: 'url(#redGradient)',
+    opacity: '0.3',
+  }), []);
 
   const svgMetrics = useMemo<SvgMetrics | undefined>(() => {
     const svgWrapper = svgWrapperRef.current;
@@ -113,301 +100,38 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     };
   }, [isFullScreenOn, wrapperMetrics]);
 
-  const statsCoordsAndGraphElemsAndStepX = useMemo(() => {
-    const STROKE_PROPS: StrokeProps = {
-      width: '2',
-      colorGreen: '#0AAF60',
-      colorRed: '#FA4545',
-      linejoin: 'round',
-      strokeLinecap: 'round',
-    };
+  const minMaxAmount = useMemo(() => calcMinMaxAmount(paymentStats), [paymentStats]);
+  const minMaxCoords = useMemo(
+    () => calcMinMaxCoords(TOP_INDENT_PX, BOTTOM_INDENT_PERCENT, svgMetrics),
+    [svgMetrics],
+  );
 
-    const FILL_PROPS: FillProps = {
-      colorGreen: 'url(#greenGradient)',
-      colorRed: 'url(#redGradient)',
-      opacity: '0.3',
-    };
+  const XYSteps = useMemo(
+    () => calcXYSteps(minMaxAmount, minMaxCoords, paymentStats.length),
+    [minMaxAmount, minMaxCoords, paymentStats.length],
+  );
 
-    const TOP_INDENT_PX = 60;
-    const BOTTOM_INDENT_PERCENT = 0.1;
+  const XStep = XYSteps?.XStep;
 
-    function calcXCoord(indexInArray: number, Xstep: number) {
-      return indexInArray * Xstep;
-    }
+  const statsWithCoords = useMemo(
+    () => createStatsWithCoords(paymentStats, minMaxAmount, minMaxCoords, XYSteps),
+    [XYSteps, minMaxAmount, minMaxCoords, paymentStats],
+  );
 
-    function checkAmountType(amount: number): AmountType {
-      return amount >= 0 ? 'positive' : 'negative';
-    }
-
-    function startPath(x: number, y: number) {
-      return `M ${x} ${y}`;
-    }
-
-    function calcNextAdditionalCoords(props: CalcNextAdditionalCoordsProps) {
-      const {
-        currentX,
-        nextX,
-        currentAmount,
-        nextAmount,
-        zeroLineYCoord,
-      } = props;
-
-      const ABSAmountSum = Math.abs(currentAmount) + Math.abs(nextAmount);
-      const currentAmountPercent = Math.abs(currentAmount) / ABSAmountSum;
-
-      const additionalCoordX = currentX + (nextX - currentX) * currentAmountPercent;
-      const additionalCoordY = zeroLineYCoord;
-
-      return {
-        x: additionalCoordX,
-        y: additionalCoordY,
-      };
-    }
-
-    function addGraphPaths(props: AddGraphPathsProps) {
-      const { pathsArr, color, strokeStr, fillStr } = props;
-
-      pathsArr.push(
-        <path
-          key={strokeStr}
-          d={strokeStr}
-          fill="none"
-          strokeWidth={STROKE_PROPS.width}
-          stroke={STROKE_PROPS[color]}
-          strokeLinejoin={STROKE_PROPS.linejoin}
-          strokeLinecap={STROKE_PROPS.strokeLinecap}
-        />,
-        <path
-          key={fillStr}
-          d={fillStr}
-          fill={FILL_PROPS[color]}
-          stroke="none"
-          opacity={FILL_PROPS.opacity}
-        />,
-      );
-    }
-
-    function isZeroLineNeeded(
-      currentAmountType: AmountType,
-      isNextAdditionalCoordsNeeded: boolean,
-      isLast: boolean,
-      isPrevCoordsExist: boolean,
-    ) {
-      if (currentAmountType === 'negative' && (isNextAdditionalCoordsNeeded || (isLast && isPrevCoordsExist))) {
-        return true;
-      }
-
-      return false;
-    }
-
-    function drawAndAddZeroLinePath(
-      pathsArr: React.ReactNode[],
-      zeroLineY: number,
-      x1: number,
-      x2: number,
-    ) {
-      pathsArr.push(
-        <path
-          key={`zeroLine${x1}${x2}`}
-          d={`M ${x1} ${zeroLineY} L ${x2} ${zeroLineY}`}
-          fill="none"
-          strokeWidth="2"
-          stroke="#CACACE"
-          strokeDasharray="5,5"
-        />,
-      );
-    }
-
-    if (!svgMetrics) return;
-
-    const svgWidth = svgMetrics.width;
-    const svgHeight = svgMetrics.height;
-
-    const allAmounts = paymentStats.map((p) => p.amount);
-    const minAmount = Math.min(...allAmounts);
-    const maxAmount = Math.max(...allAmounts);
-
-    const daysAmount = paymentStats.length;
-
-    const minYCoord = TOP_INDENT_PX;
-    const maxYCoord = svgHeight * (1 - BOTTOM_INDENT_PERCENT);
-    const minXCoord = 0;
-    const maxXCoord = svgWidth;
-
-    const XStep = (maxXCoord - minXCoord) / (daysAmount - 1);
-    const YStep = (maxYCoord - minYCoord) / (maxAmount - minAmount);
-
-    const zeroLineYCoord = calcYCoord(0, minAmount, YStep, maxYCoord);
-
-    const newStatsCoords: StatsCoords[] = paymentStats
-      .map((s, i) => ({
-        ...s,
-        x: calcXCoord(i, XStep),
-        y: calcYCoord(s.amount, minAmount, YStep, maxYCoord),
-      }));
-
-    const newGraphElems: React.ReactNode[] = [];
-    let dStrokeStr: string;
-    let prevAdditionalCoords: PrevAdditionalCoords;
-
-    newStatsCoords.forEach((s, i) => {
-      const prevStatsAmount = newStatsCoords[i - 1]?.amount;
-      const currenStatsAmount = s.amount;
-      const nextStatsAmount = newStatsCoords[i + 1]?.amount;
-
-      const currentAmountType = checkAmountType(currenStatsAmount);
-
-      const { x: currentX, y: currentY } = s;
-      const color = currentAmountType === 'positive' ? 'colorGreen' : 'colorRed';
-
-      if (i === 0) {
-        dStrokeStr = startPath(currentX, currentY);
-
-        const nextAmountType = checkAmountType(nextStatsAmount);
-        const isNextAdditionalCoordsNeeded = currentAmountType !== nextAmountType;
-
-        if (isNextAdditionalCoordsNeeded) {
-          const { x: nextX } = newStatsCoords[i + 1];
-
-          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords({
-            currentX,
-            nextX,
-            currentAmount: currenStatsAmount,
-            nextAmount: nextStatsAmount,
-            zeroLineYCoord,
-          });
-
-          dStrokeStr += ` L ${additionalCoordX} ${additionalCoordY}`;
-          const dFillStr = `${dStrokeStr} L ${minXCoord} ${zeroLineYCoord} Z`;
-
-          if (isZeroLineNeeded(
-            currentAmountType,
-            isNextAdditionalCoordsNeeded,
-            false,
-            !!prevAdditionalCoords,
-          )) {
-            drawAndAddZeroLinePath(newGraphElems, zeroLineYCoord, minXCoord, additionalCoordX);
-          }
-
-          addGraphPaths({
-            pathsArr: newGraphElems,
-            color,
-            strokeStr: dStrokeStr,
-            fillStr: dFillStr,
-          });
-
-          prevAdditionalCoords = {
-            x: additionalCoordX,
-            y: additionalCoordY,
-          };
-        }
-      } else if (i === daysAmount - 1) {
-        const prevAmountType = checkAmountType(prevStatsAmount);
-        const isPrevAdditionalCoordsUsed = !!prevAdditionalCoords;
-        const isNextAdditionalCoordsNeeded = false;
-
-        if (prevAmountType !== currentAmountType) {
-          dStrokeStr = startPath(prevAdditionalCoords.x, prevAdditionalCoords.y);
-        }
-
-        dStrokeStr += ` L ${currentX} ${currentY}`;
-        let dFillStr = `${dStrokeStr} L ${maxXCoord} ${zeroLineYCoord}`;
-
-        if (isPrevAdditionalCoordsUsed) {
-          dFillStr += ' Z';
-        } else {
-          dFillStr += ` L ${minXCoord} ${zeroLineYCoord} Z`;
-        }
-
-        if (isZeroLineNeeded(
-          currentAmountType,
-          isNextAdditionalCoordsNeeded,
-          true,
-          !!prevAdditionalCoords,
-        )) {
-          drawAndAddZeroLinePath(newGraphElems, zeroLineYCoord, prevAdditionalCoords.x, maxXCoord);
-        }
-
-        addGraphPaths({
-          pathsArr: newGraphElems,
-          color,
-          strokeStr: dStrokeStr,
-          fillStr: dFillStr,
-        });
-      } else {
-        const prevAmountType = checkAmountType(prevStatsAmount);
-        const nextAmountType = checkAmountType(nextStatsAmount);
-        const isPrevAdditionalCoordsUsed = prevAmountType !== currentAmountType;
-        const isNextAdditionalCoordsNeeded = currentAmountType !== nextAmountType;
-
-        if (isPrevAdditionalCoordsUsed) {
-          dStrokeStr = startPath(prevAdditionalCoords.x, prevAdditionalCoords.y);
-        }
-
-        dStrokeStr += ` L ${currentX} ${currentY}`;
-
-        if (isNextAdditionalCoordsNeeded) {
-          const { x: nextX } = newStatsCoords[i + 1];
-
-          const { x: additionalCoordX, y: additionalCoordY } = calcNextAdditionalCoords({
-            currentX,
-            nextX,
-            currentAmount: currenStatsAmount,
-            nextAmount: nextStatsAmount,
-            zeroLineYCoord,
-          });
-
-          dStrokeStr += ` L ${additionalCoordX} ${additionalCoordY}`;
-          let dFillStr = dStrokeStr;
-
-          if (!prevAdditionalCoords) {
-            dFillStr += ` L ${minXCoord} ${zeroLineYCoord} Z`;
-          } else {
-            dFillStr += ' Z';
-          }
-
-          if (isZeroLineNeeded(
-            currentAmountType,
-            isNextAdditionalCoordsNeeded,
-            false,
-            !!prevAdditionalCoords,
-          )) {
-            drawAndAddZeroLinePath(
-              newGraphElems,
-              zeroLineYCoord,
-              prevAdditionalCoords?.x || minXCoord,
-              additionalCoordX,
-            );
-          }
-
-          addGraphPaths({
-            pathsArr: newGraphElems,
-            color,
-            strokeStr: dStrokeStr,
-            fillStr: dFillStr,
-          });
-
-          prevAdditionalCoords = {
-            x: additionalCoordX,
-            y: additionalCoordY,
-          };
-        }
-      }
-    });
-
-    return {
-      statsCoords: newStatsCoords,
-      graphElems: newGraphElems,
-      XStep,
-    };
-  }, [paymentStats, svgMetrics]);
-
-  const statsCoords = statsCoordsAndGraphElemsAndStepX?.statsCoords;
-  const graphElems = statsCoordsAndGraphElemsAndStepX?.graphElems;
-  const XStep = statsCoordsAndGraphElemsAndStepX?.XStep;
+  const graphElems = useMemo(
+    () => createGraphElems(
+      statsWithCoords,
+      minMaxAmount,
+      minMaxCoords,
+      XYSteps,
+      STROKE_PROPS,
+      FILL_PROPS,
+    ),
+    [statsWithCoords, minMaxAmount, minMaxCoords, XYSteps, STROKE_PROPS, FILL_PROPS],
+  );
 
   const dateElems = useMemo(() => {
-    if (!statsCoords || !svgMetrics) return;
+    if (!statsWithCoords || !svgMetrics) return;
 
     const OFFSET_X_PX = 50;
     const amountOfMiddleDates = isFullScreenOn ? 6 : 4;
@@ -417,14 +141,14 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
     let firstSuitableStatIndex: number;
 
-    let firstSuitableStat: StatsCoords;
-    let lastSuitableStat: StatsCoords;
+    let firstSuitableStat: StatsWithCoords;
+    let lastSuitableStat: StatsWithCoords;
 
-    for (let i = 1; i < statsCoords.length; i += 1) {
-      const currentStat = statsCoords[i];
+    for (let i = 1; i < statsWithCoords.length; i += 1) {
+      const currentStat = statsWithCoords[i];
 
       if (currentStat.x >= startX) {
-        const prevStat = statsCoords[i - 1];
+        const prevStat = statsWithCoords[i - 1];
         const prevStatXDiff = startX - prevStat.x;
         const currentStatXDiff = currentStat.x - startX;
 
@@ -440,11 +164,11 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       }
     }
 
-    for (let i = statsCoords.length - 1; i >= 0; i -= 1) {
-      const currentStat = statsCoords[i];
+    for (let i = statsWithCoords.length - 1; i >= 0; i -= 1) {
+      const currentStat = statsWithCoords[i];
 
       if (currentStat.x <= endX) {
-        const nextStat = statsCoords[i + 1];
+        const nextStat = statsWithCoords[i + 1];
         const nextStatXDiff = nextStat.x - endX;
         const currentStatXDiff = endX - currentStat.x;
 
@@ -471,24 +195,24 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     }
 
     let currentBreakPointIndex = 0;
-    const middleDates: StatsCoords[] = [];
+    const middleDates: StatsWithCoords[] = [];
 
-    for (let i = firstSuitableStatIndex! + 1; i < statsCoords.length; i += 1) {
+    for (let i = firstSuitableStatIndex! + 1; i < statsWithCoords.length; i += 1) {
       const currentBreakPoint = middleDatesBreakpoints[currentBreakPointIndex];
 
       if (!currentBreakPoint) break;
 
-      const currentStatX = statsCoords[i].x;
-      const prevStatX = statsCoords[i - 1].x;
+      const currentStatX = statsWithCoords[i].x;
+      const prevStatX = statsWithCoords[i - 1].x;
 
       if (currentStatX > currentBreakPoint) {
         const currentStatDiffer = currentStatX - currentBreakPoint;
         const prevStatDiffer = currentBreakPoint - prevStatX;
 
         if (prevStatDiffer < currentStatDiffer) {
-          middleDates.push(statsCoords[i - 1]);
+          middleDates.push(statsWithCoords[i - 1]);
         } else {
-          middleDates.push(statsCoords[i]);
+          middleDates.push(statsWithCoords[i]);
         }
 
         currentBreakPointIndex += 1;
@@ -515,20 +239,20 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     });
 
     return newDateElems;
-  }, [isFullScreenOn, statsCoords, svgMetrics]);
+  }, [isFullScreenOn, statsWithCoords, svgMetrics]);
 
   // when current period changes, tipconfig rendering takes too much time
   const tipConfig = useMemo(() => {
-    if (!statsCoords || !svgMetrics) return;
+    if (!statsWithCoords || !svgMetrics) return;
 
     let currentActiveIndex = activeStatsIndex;
 
-    if (currentActiveIndex >= statsCoords.length) {
+    if (currentActiveIndex >= statsWithCoords.length) {
       currentActiveIndex = 0;
       setActiveStatsIndex(currentActiveIndex);
     }
 
-    const activeStats = statsCoords[currentActiveIndex];
+    const activeStats = statsWithCoords[currentActiveIndex];
 
     const newTipConfig: TipConfig = {
       ...activeStats,
@@ -537,10 +261,10 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     };
 
     return newTipConfig;
-  }, [activeStatsIndex, statsCoords, svgMetrics]);
+  }, [activeStatsIndex, statsWithCoords, svgMetrics]);
 
   const inferNewActiveStatsIndex = useCallback((x: number) => {
-    if (!statsCoords || !XStep) return;
+    if (!statsWithCoords || !XStep) return;
 
     const halfOfXStep = XStep / 2;
 
@@ -548,19 +272,19 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       return 0;
     }
 
-    if (x >= statsCoords[statsCoords.length - 1].x) {
-      return statsCoords.length - 1;
+    if (x >= statsWithCoords[statsWithCoords.length - 1].x) {
+      return statsWithCoords.length - 1;
     }
 
-    for (let i = 0; i < statsCoords.length; i += 1) {
-      const currentStatsMinX = statsCoords[i].x - halfOfXStep;
-      const currentStatsMaxX = statsCoords[i].x + halfOfXStep;
+    for (let i = 0; i < statsWithCoords.length; i += 1) {
+      const currentStatsMinX = statsWithCoords[i].x - halfOfXStep;
+      const currentStatsMaxX = statsWithCoords[i].x + halfOfXStep;
 
       if (x >= currentStatsMinX && x <= currentStatsMaxX) {
         return i;
       }
     }
-  }, [XStep, statsCoords]);
+  }, [XStep, statsWithCoords]);
 
   // useCallback might be unnecessary there
   const onGraphAndDatesFocus = useCallback(() => {
@@ -574,7 +298,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
   // useCallback might be unnecessary there
   const onGraphAndDatesKeyDown = useCallback<KeyboardEventHandler<HTMLDivElement>>((e) => {
-    if (!statsCoords) return;
+    if (!statsWithCoords) return;
 
     const suitableKeyboardCodes = [
       'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
@@ -595,8 +319,8 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
         case 'ArrowRight':
         case 'ArrowUp':
           newActiveStatsIndex = activeStatsIndex + 1;
-          if (newActiveStatsIndex === statsCoords.length) {
-            newActiveStatsIndex = statsCoords.length - 1;
+          if (newActiveStatsIndex === statsWithCoords.length) {
+            newActiveStatsIndex = statsWithCoords.length - 1;
           }
           break;
         case 'PageDown':
@@ -605,12 +329,12 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
           break;
         case 'PageUp':
           newActiveStatsIndex = activeStatsIndex + 5;
-          if (newActiveStatsIndex >= statsCoords.length) {
-            newActiveStatsIndex = statsCoords.length - 1;
+          if (newActiveStatsIndex >= statsWithCoords.length) {
+            newActiveStatsIndex = statsWithCoords.length - 1;
           }
           break;
         case 'Home':
-          newActiveStatsIndex = statsCoords.length - 1;
+          newActiveStatsIndex = statsWithCoords.length - 1;
           break;
         case 'End':
           newActiveStatsIndex = 0;
@@ -619,7 +343,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
       setActiveStatsIndex(newActiveStatsIndex!);
     }
-  }, [activeStatsIndex, statsCoords]);
+  }, [activeStatsIndex, statsWithCoords]);
 
   const onGraphAndDatesMove = useCallback((e: PointerEvent) => {
     e.preventDefault();

@@ -6,6 +6,7 @@ interface ButtonProps {
   readonly dateBtnType: ActiveDateRange,
   readonly activeButton: ActiveDateRange,
   readonly setActiveButton: Dispatch<SetStateAction<ActiveDateRange>>,
+  readonly testid: string,
   readonly children: React.ReactNode,
 }
 
@@ -13,6 +14,7 @@ const DateRangeButton: React.FC<ButtonProps> = ({
   dateBtnType,
   activeButton,
   setActiveButton,
+  testid,
   children,
 }) => {
   const btnStandartClassname = `w-[36px] h-[30px] flex justify-center items-center font-tthoves 
@@ -42,6 +44,7 @@ const DateRangeButton: React.FC<ButtonProps> = ({
       role="radio"
       aria-checked={dateBtnType === activeButton}
       aria-label={ariaLabelText[dateBtnType]}
+      data-testid={testid}
     >
       {children}
     </button>

@@ -15,6 +15,7 @@
     "React": true
   },
   "rules": {
+    "class-methods-use-this": "off",
     "import/no-extraneous-dependencies": "off",
     "object-curly-newline": "off",
     "consistent-return": "off",

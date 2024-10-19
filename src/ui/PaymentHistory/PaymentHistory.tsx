@@ -259,6 +259,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
         width: componentWidth,
       }}
       onTransitionEnd={paymentComponentOnTransitionEnd}
+      data-testid="paymentHistory"
     >
       <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
         <div className="w-full flex justify-between items-center">
@@ -275,6 +276,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
                 dateBtnType="1M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
+                testid="rangeBtn-1m"
               >
                 1M
               </DateRangeButton>
@@ -282,6 +284,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
                 dateBtnType="3M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
+                testid="rangeBtn-3m"
               >
                 3M
               </DateRangeButton>
@@ -289,6 +292,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
                 dateBtnType="6M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
+                testid="rangeBtn-6m"
               >
                 6M
               </DateRangeButton>
@@ -296,6 +300,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
                 dateBtnType="1Y"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
+                testid="rangeBtn-1y"
               >
                 1Y
               </DateRangeButton>
@@ -319,7 +324,10 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
           aria-busy={!formattedAllPaymentStats}
           aria-label={currentPeriodAmountLabelText}
         >
-          <p className="font-tthoves font-medium text-[42px] text-darkBlue">
+          <p
+            className="font-tthoves font-medium text-[42px] text-darkBlue"
+            data-testid="totalAmountParagraph"
+          >
             {currentPeriodTotalAmount.integer}
             <span className="text-[32px] text-grey-400">
               {currentPeriodTotalAmount.float}
@@ -328,10 +336,14 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
           <div className="flex justify-start items-center gap-[8px]">
             <Badge
               isPositive={comparePercent >= 0}
+              testid="periodPercentBadge"
             >
               {comparePercentStr}
             </Badge>
-            <p className="font-tthoves text-[14px] text-grey-400">
+            <p
+              className="font-tthoves text-[14px] text-grey-400"
+              data-testid="compareTextParagraph"
+            >
               {compareText}
             </p>
           </div>
