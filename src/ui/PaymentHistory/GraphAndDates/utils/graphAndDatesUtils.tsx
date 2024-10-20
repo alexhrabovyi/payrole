@@ -222,13 +222,21 @@ export function createGraphElems(
 ) {
   if (!minMaxCoords || !XYSteps || !statsWithCoords) return;
 
-  const { minAmount } = minMaxAmount;
-  const { minXCoord, maxXCoord, maxYCoord } = minMaxCoords;
+  const { minAmount, maxAmount } = minMaxAmount;
+  const { minXCoord, maxXCoord, minYCoord, maxYCoord } = minMaxCoords;
   const { YStep } = XYSteps;
 
   const daysAmount = statsWithCoords.length;
 
-  const zeroLineYCoord = calcYCoord(0, minAmount, YStep, maxYCoord);
+  let zeroLineYCoord: number;
+
+  if (minAmount < 0 && maxAmount < 0) {
+    zeroLineYCoord = minYCoord;
+  } else if (minAmount > 0 && maxAmount > 0) {
+    zeroLineYCoord = maxYCoord;
+  } else {
+    zeroLineYCoord = calcYCoord(0, minAmount, YStep, maxYCoord);
+  }
 
   const newGraphElems: React.ReactNode[] = [];
   let dStrokeStr: string;
@@ -392,4 +400,119 @@ export function createGraphElems(
   });
 
   return newGraphElems;
+}
+
+export function createDateElems(
+  statsWithCoords: StatsWithCoords[] | undefined,
+  isFullScreenOn: boolean,
+  svgWidth: number | undefined,
+  offsetX: number,
+) {
+  if (!statsWithCoords || !svgWidth) return;
+
+  const amountOfMiddleDates = isFullScreenOn ? 6 : 4;
+
+  const startX = offsetX;
+  const endX = svgWidth - offsetX;
+
+  let firstSuitableStatIndex: number;
+
+  let firstSuitableStat: StatsWithCoords;
+  let lastSuitableStat: StatsWithCoords;
+
+  for (let i = 1; i < statsWithCoords.length; i += 1) {
+    const currentStat = statsWithCoords[i];
+
+    if (currentStat.x >= startX) {
+      const prevStat = statsWithCoords[i - 1];
+      const prevStatXDiff = startX - prevStat.x;
+      const currentStatXDiff = currentStat.x - startX;
+
+      if (prevStatXDiff < currentStatXDiff) {
+        firstSuitableStatIndex = i - 1;
+        firstSuitableStat = prevStat;
+      } else {
+        firstSuitableStatIndex = i;
+        firstSuitableStat = currentStat;
+      }
+
+      break;
+    }
+  }
+
+  for (let i = statsWithCoords.length - 1; i >= 0; i -= 1) {
+    const currentStat = statsWithCoords[i];
+
+    if (currentStat.x <= endX) {
+      const nextStat = statsWithCoords[i + 1];
+      const nextStatXDiff = nextStat.x - endX;
+      const currentStatXDiff = endX - currentStat.x;
+
+      if (nextStatXDiff < currentStatXDiff) {
+        lastSuitableStat = nextStat;
+      } else {
+        lastSuitableStat = currentStat;
+      }
+
+      break;
+    }
+  }
+
+  const middleDatesStartX = firstSuitableStat!.x;
+  const middleDatesEndX = lastSuitableStat!.x;
+
+  const xStep = (middleDatesEndX - middleDatesStartX) / (amountOfMiddleDates + 1);
+
+  const middleDatesBreakpoints = [];
+
+  for (let i = 1; i <= amountOfMiddleDates; i += 1) {
+    const breakPoint = middleDatesStartX + xStep * i;
+    middleDatesBreakpoints.push(breakPoint);
+  }
+
+  let currentBreakPointIndex = 0;
+  const middleDates: StatsWithCoords[] = [];
+
+  for (let i = firstSuitableStatIndex! + 1; i < statsWithCoords.length; i += 1) {
+    const currentBreakPoint = middleDatesBreakpoints[currentBreakPointIndex];
+
+    if (!currentBreakPoint) break;
+
+    const currentStatX = statsWithCoords[i].x;
+    const prevStatX = statsWithCoords[i - 1].x;
+
+    if (currentStatX > currentBreakPoint) {
+      const currentStatDiffer = currentStatX - currentBreakPoint;
+      const prevStatDiffer = currentBreakPoint - prevStatX;
+
+      if (prevStatDiffer < currentStatDiffer) {
+        middleDates.push(statsWithCoords[i - 1]);
+      } else {
+        middleDates.push(statsWithCoords[i]);
+      }
+
+      currentBreakPointIndex += 1;
+    }
+  }
+
+  const suitableStats = [firstSuitableStat!, ...middleDates, lastSuitableStat!];
+
+  const newDateElems = suitableStats.map((s) => {
+    const text = `${s.month} ${s.day}`;
+
+    return (
+      <p
+        key={s.x}
+        style={{
+          position: 'absolute',
+          left: `${s.x}px`,
+          transform: 'translateX(-50%)',
+        }}
+      >
+        {text}
+      </p>
+    );
+  });
+
+  return newDateElems;
 }

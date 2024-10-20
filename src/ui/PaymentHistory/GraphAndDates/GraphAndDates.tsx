@@ -4,7 +4,10 @@ import { KeyboardEventHandler, PointerEventHandler, useCallback, useMemo, useRef
 
 import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
-import { calcMinMaxAmount, calcMinMaxCoords, calcXYSteps, createGraphElems, createStatsWithCoords } from './utils/graphAndDatesUtils';
+import {
+  calcMinMaxAmount, calcMinMaxCoords, calcXYSteps,
+  createGraphElems, createStatsWithCoords, createDateElems,
+} from './utils/graphAndDatesUtils';
 
 import CurrentStatsTip from '../CurrentStatsTip/CurrentStatsTip';
 
@@ -58,6 +61,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
   const TOP_INDENT_PX = 60;
   const BOTTOM_INDENT_PERCENT = 0.1;
+  const DATES_OFFSET_X_PX = 50;
 
   const STROKE_PROPS = useMemo<StrokeProps>(() => ({
     width: '2',
@@ -130,118 +134,13 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     [statsWithCoords, minMaxAmount, minMaxCoords, XYSteps, STROKE_PROPS, FILL_PROPS],
   );
 
-  const dateElems = useMemo(() => {
-    if (!statsWithCoords || !svgMetrics) return;
+  const dateElems = useMemo(() => createDateElems(
+    statsWithCoords,
+    isFullScreenOn,
+    svgMetrics?.width,
+    DATES_OFFSET_X_PX,
+  ), [isFullScreenOn, statsWithCoords, svgMetrics?.width]);
 
-    const OFFSET_X_PX = 50;
-    const amountOfMiddleDates = isFullScreenOn ? 6 : 4;
-
-    const startX = OFFSET_X_PX;
-    const endX = svgMetrics.width - OFFSET_X_PX;
-
-    let firstSuitableStatIndex: number;
-
-    let firstSuitableStat: StatsWithCoords;
-    let lastSuitableStat: StatsWithCoords;
-
-    for (let i = 1; i < statsWithCoords.length; i += 1) {
-      const currentStat = statsWithCoords[i];
-
-      if (currentStat.x >= startX) {
-        const prevStat = statsWithCoords[i - 1];
-        const prevStatXDiff = startX - prevStat.x;
-        const currentStatXDiff = currentStat.x - startX;
-
-        if (prevStatXDiff < currentStatXDiff) {
-          firstSuitableStatIndex = i - 1;
-          firstSuitableStat = prevStat;
-        } else {
-          firstSuitableStatIndex = i;
-          firstSuitableStat = currentStat;
-        }
-
-        break;
-      }
-    }
-
-    for (let i = statsWithCoords.length - 1; i >= 0; i -= 1) {
-      const currentStat = statsWithCoords[i];
-
-      if (currentStat.x <= endX) {
-        const nextStat = statsWithCoords[i + 1];
-        const nextStatXDiff = nextStat.x - endX;
-        const currentStatXDiff = endX - currentStat.x;
-
-        if (nextStatXDiff < currentStatXDiff) {
-          lastSuitableStat = nextStat;
-        } else {
-          lastSuitableStat = currentStat;
-        }
-
-        break;
-      }
-    }
-
-    const middleDatesStartX = firstSuitableStat!.x;
-    const middleDatesEndX = lastSuitableStat!.x;
-
-    const xStep = (middleDatesEndX - middleDatesStartX) / (amountOfMiddleDates + 1);
-
-    const middleDatesBreakpoints = [];
-
-    for (let i = 1; i <= amountOfMiddleDates; i += 1) {
-      const breakPoint = middleDatesStartX + xStep * i;
-      middleDatesBreakpoints.push(breakPoint);
-    }
-
-    let currentBreakPointIndex = 0;
-    const middleDates: StatsWithCoords[] = [];
-
-    for (let i = firstSuitableStatIndex! + 1; i < statsWithCoords.length; i += 1) {
-      const currentBreakPoint = middleDatesBreakpoints[currentBreakPointIndex];
-
-      if (!currentBreakPoint) break;
-
-      const currentStatX = statsWithCoords[i].x;
-      const prevStatX = statsWithCoords[i - 1].x;
-
-      if (currentStatX > currentBreakPoint) {
-        const currentStatDiffer = currentStatX - currentBreakPoint;
-        const prevStatDiffer = currentBreakPoint - prevStatX;
-
-        if (prevStatDiffer < currentStatDiffer) {
-          middleDates.push(statsWithCoords[i - 1]);
-        } else {
-          middleDates.push(statsWithCoords[i]);
-        }
-
-        currentBreakPointIndex += 1;
-      }
-    }
-
-    const suitableStats = [firstSuitableStat!, ...middleDates, lastSuitableStat!];
-
-    const newDateElems = suitableStats.map((s) => {
-      const text = `${s.month} ${s.day}`;
-
-      return (
-        <p
-          key={s.x}
-          style={{
-            position: 'absolute',
-            left: `${s.x}px`,
-            transform: 'translateX(-50%)',
-          }}
-        >
-          {text}
-        </p>
-      );
-    });
-
-    return newDateElems;
-  }, [isFullScreenOn, statsWithCoords, svgMetrics]);
-
-  // when current period changes, tipconfig rendering takes too much time
   const tipConfig = useMemo(() => {
     if (!statsWithCoords || !svgMetrics) return;
 
@@ -286,18 +185,15 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     }
   }, [XStep, statsWithCoords]);
 
-  // useCallback might be unnecessary there
-  const onGraphAndDatesFocus = useCallback(() => {
+  function onGraphAndDatesFocus() {
     setIsTipActive(true);
-  }, []);
+  }
 
-  // useCallback might be unnecessary there
-  const onGraphAndDatesBlur = useCallback(() => {
+  function onGraphAndDatesBlur() {
     setIsTipActive(false);
-  }, []);
+  }
 
-  // useCallback might be unnecessary there
-  const onGraphAndDatesKeyDown = useCallback<KeyboardEventHandler<HTMLDivElement>>((e) => {
+  const onGraphAndDatesKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (!statsWithCoords) return;
 
     const suitableKeyboardCodes = [
@@ -343,9 +239,9 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
       setActiveStatsIndex(newActiveStatsIndex!);
     }
-  }, [activeStatsIndex, statsWithCoords]);
+  };
 
-  const onGraphAndDatesMove = useCallback((e: PointerEvent) => {
+  function onGraphAndDatesMove(e: PointerEvent) {
     e.preventDefault();
 
     const { clientX } = e;
@@ -355,10 +251,11 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     const currentSvgX = clientX - svgMetrics.pageX;
 
     const newIndex = inferNewActiveStatsIndex(currentSvgX);
-    setActiveStatsIndex(newIndex!);
-  }, [inferNewActiveStatsIndex, svgMetrics]);
 
-  const onGraphAndDatesOut = useCallback((e: PointerEvent) => {
+    setActiveStatsIndex(newIndex!);
+  }
+
+  function onGraphAndDatesOut(e: PointerEvent) {
     const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
 
@@ -368,9 +265,9 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
       setIsTipActive(false);
     }
-  }, [onGraphAndDatesMove]);
+  }
 
-  const onGraphAndDatesOver = useCallback<PointerEventHandler<HTMLDivElement>>((e) => {
+  const onGraphAndDatesOver: PointerEventHandler<HTMLDivElement> = (e) => {
     const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const { clientX, pointerType, pointerId } = e;
 
@@ -390,9 +287,9 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
       graphAndDatesBlock.addEventListener('pointerout', onGraphAndDatesOut);
     }
-  }, [inferNewActiveStatsIndex, onGraphAndDatesMove, onGraphAndDatesOut, svgMetrics]);
+  };
 
-  const onGraphAndDatesUp = useCallback(() => {
+  function onGraphAndDatesUp() {
     const graphAndDatesBlock = graphAndDatesBlockRef.current;
 
     if (!graphAndDatesBlock) return;
@@ -406,9 +303,9 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     graphAndDatesBlock.removeEventListener('pointerup', onGraphAndDatesUp);
 
     setIsTipActive(false);
-  }, [onGraphAndDatesMove]);
+  }
 
-  const onGraphAndDatesDown = useCallback<PointerEventHandler<HTMLDivElement>>((e) => {
+  const onGraphAndDatesDown: PointerEventHandler<HTMLDivElement> = (e) => {
     const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const { clientX, pointerType, pointerId } = e;
 
@@ -429,7 +326,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
       graphAndDatesBlock.addEventListener('pointerup', onGraphAndDatesUp);
     }
-  }, [inferNewActiveStatsIndex, onGraphAndDatesMove, onGraphAndDatesUp, svgMetrics]);
+  };
 
   return (
     <div
@@ -481,5 +378,3 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 };
 
 export default GraphAndDates;
-
-// when all values negative there is a bug (screenshot is in tg)
