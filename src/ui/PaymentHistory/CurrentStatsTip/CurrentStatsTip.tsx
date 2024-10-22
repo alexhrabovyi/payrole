@@ -1,5 +1,5 @@
 import {
-  useCallback, useMemo, useRef,
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 
 import formatAmount from '@/libs/formatAmount/formatAmount';
@@ -12,7 +12,7 @@ interface StatsTipProps {
   tipConfig: TipConfig | undefined,
 }
 
-interface TipMetrics {
+export interface TipMetrics {
   tipWidth: number,
   tipHeight: number,
   circleWidth: number,
@@ -33,27 +33,152 @@ interface StyleParams {
   verticalLinePath: string,
 }
 
+export function calcStyleParams(
+  tipMetrics: TipMetrics | undefined,
+  tipConfig: TipConfig | undefined,
+  tipXPadding: number,
+  verticalLineWidth: number,
+  triangleShortSideWidth: number,
+  triangleLongSideWidth: number,
+  triangleXPadding: number,
+  triangleCircleGap: number,
+): StyleParams {
+  let tipXCoord = 0;
+  let tipYCoord = 0;
+
+  let triangleXCoord = 0;
+  let triangleYCoord = 0;
+  let triangleClassName = 'absolute transition-[left_top] duration-150 ease-in-out';
+
+  let circleXCoord = 0;
+  let circleYCoord = 0;
+
+  let verticalLineX = 0;
+  let verticalLineY = 0;
+  let verticalLineHeight = 0;
+  let verticalLinePath = '';
+
+  if (tipConfig && tipMetrics) {
+    const { tipWidth, tipHeight, circleWidth, circleHeight } = tipMetrics;
+
+    const statX = tipConfig.x;
+    const statY = tipConfig.y;
+    const svgWidth = tipConfig.svgElWidth;
+    const svgHeight = tipConfig.svgElHeight;
+
+    const isTipRightOverflow = statX + tipWidth / 2 > svgWidth - tipXPadding;
+    const isTipLeftOverflow = statX - tipWidth / 2 < tipXPadding;
+
+    circleXCoord = statX - circleWidth / 2;
+    circleYCoord = statY - circleHeight / 2;
+
+    verticalLineX = statX - verticalLineWidth / 2;
+    verticalLineY = 0;
+    verticalLineHeight = svgHeight;
+    verticalLinePath = `M 0 0 L 0 ${verticalLineHeight}`;
+
+    if (isTipRightOverflow) {
+      tipXCoord = svgWidth - tipXPadding - tipWidth;
+      triangleXCoord = statX - tipXCoord - triangleLongSideWidth / 2;
+
+      const isTriangleRightOverflow = triangleXCoord
+        + triangleLongSideWidth > tipWidth - triangleXPadding;
+
+      if (isTriangleRightOverflow) {
+        tipXCoord = statX
+          - (tipWidth + triangleShortSideWidth + triangleCircleGap + circleWidth / 2);
+        tipYCoord = statY - tipHeight / 2;
+
+        triangleXCoord = tipWidth;
+        triangleYCoord = tipHeight / 2 - triangleLongSideWidth / 2;
+        triangleClassName += ' rotate-[-90deg] translate-x-[-20%]';
+      } else {
+        tipYCoord = statY - (tipHeight + triangleShortSideWidth
+          + triangleCircleGap + (circleHeight / 2));
+
+        triangleYCoord = tipHeight;
+        triangleClassName += ' translate-y-[-20%]';
+      }
+    } else if (isTipLeftOverflow) {
+      tipXCoord = tipXPadding;
+      triangleXCoord = statX - tipXCoord - triangleLongSideWidth / 2;
+
+      const isTriangleLeftOverflow = triangleXCoord < triangleXPadding;
+
+      if (isTriangleLeftOverflow) {
+        tipXCoord = statX + triangleShortSideWidth
+          + triangleCircleGap + circleWidth / 2;
+        tipYCoord = statY - tipHeight / 2;
+
+        triangleXCoord = 0 - triangleShortSideWidth;
+        triangleYCoord = tipHeight / 2 - triangleLongSideWidth / 2;
+        triangleClassName += ' rotate-[90deg]';
+      } else {
+        tipYCoord = statY - (tipHeight + triangleShortSideWidth
+          + triangleCircleGap + (circleHeight / 2));
+
+        triangleYCoord = tipHeight;
+        triangleClassName += ' translate-y-[-20%]';
+      }
+    } else {
+      tipXCoord = statX - tipWidth / 2;
+
+      tipYCoord = statY - (tipHeight + triangleShortSideWidth
+        + triangleCircleGap + (circleHeight / 2));
+
+      triangleXCoord = tipWidth / 2 - triangleLongSideWidth / 2;
+      triangleYCoord = tipHeight;
+      triangleClassName += ' translate-y-[-20%]';
+    }
+  }
+
+  return {
+    tipXCoord,
+    tipYCoord,
+    triangleXCoord,
+    triangleYCoord,
+    triangleClassName,
+    circleXCoord,
+    circleYCoord,
+    verticalLineX,
+    verticalLineY,
+    verticalLineHeight,
+    verticalLinePath,
+  };
+}
+
 const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) => {
   const TRIANGLE_LONG_SIDE = 12;
   const TRIANGLE_SHORT_SIDE = 9;
   const GAP_BETWEEN_TRIANGLE_AND_CIRCLE = 6;
   const TIP_X_PADDING = 12;
   const TRIANGLE_X_PADDING = 12;
+  const VERTICAL_LINE_WIDTH_PX = 2;
 
   const tipRef = useRef<HTMLDivElement | null>(null);
   const circleSpanRef = useRef<HTMLSpanElement | null>(null);
 
-  const calcTipMetrics = useCallback<() => TipMetrics | undefined>(() => {
-    const tip = tipRef.current;
-    const circleSpan = circleSpanRef.current;
+  const [tipEl, setTipEl] = useState<HTMLDivElement | null>(null);
+  const [circleSpanEl, setCircleSpanEl] = useState<HTMLSpanElement | null>(null);
 
-    if (!tip || !circleSpan) return;
+  useEffect(() => {
+    if (tipRef.current !== tipEl) {
+      setTipEl(tipRef.current);
+    }
 
-    const tipWidth = tip.offsetWidth;
-    const tipHeight = tip.offsetHeight;
+    if (circleSpanRef.current !== circleSpanEl) {
+      setCircleSpanEl(circleSpanRef.current);
+    }
+  }, [circleSpanEl, tipEl]);
 
-    const circleWidth = circleSpan.offsetWidth;
-    const circleHeight = circleSpan.offsetHeight;
+  const inferTipMetrics = useCallback<() => TipMetrics | undefined>(() => {
+    if (!tipEl || !circleSpanEl) return;
+
+    const tipWidth = tipEl.offsetWidth;
+    const tipHeight = tipEl.offsetHeight;
+
+    const circleWidth = circleSpanEl.offsetWidth;
+    const circleHeight = circleSpanEl.offsetHeight;
 
     return {
       tipWidth,
@@ -61,115 +186,20 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
       circleWidth,
       circleHeight,
     };
-  }, []);
+  }, [circleSpanEl, tipEl]);
 
-  const styleParams = useMemo<StyleParams>(() => {
-    let tipXCoord = 0;
-    let tipYCoord = 0;
-
-    let triangleXCoord = 0;
-    let triangleYCoord = 0;
-    let triangleClassName = 'absolute transition-[left_top] duration-150 ease-in-out';
-
-    let circleXCoord = 0;
-    let circleYCoord = 0;
-
-    let verticalLineX = 0;
-    let verticalLineY = 0;
-    let verticalLineHeight = 0;
-    let verticalLinePath = '';
-
-    const tipMetrics = calcTipMetrics();
-
-    if (tipConfig && tipMetrics) {
-      const { tipWidth, tipHeight, circleWidth, circleHeight } = tipMetrics;
-
-      const statX = tipConfig.x;
-      const statY = tipConfig.y;
-      const svgWidth = tipConfig.svgElWidth;
-      const svgHeight = tipConfig.svgElHeight;
-
-      const isTipRightOverflow = statX + tipWidth / 2 > svgWidth - TIP_X_PADDING;
-      const isTipLeftOverflow = statX - tipWidth / 2 < TIP_X_PADDING;
-
-      circleXCoord = statX - circleWidth / 2;
-      circleYCoord = statY - circleHeight / 2;
-
-      // stat - verticalLineWidth, it could be in a variable
-      verticalLineX = statX - 1;
-      verticalLineY = 0;
-      verticalLineHeight = svgHeight;
-      verticalLinePath = `M 0 0 L 0 ${verticalLineHeight}`;
-
-      if (isTipRightOverflow) {
-        tipXCoord = svgWidth - TIP_X_PADDING - tipWidth;
-        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
-
-        const isTriangleRightOverflow = triangleXCoord
-          + TRIANGLE_LONG_SIDE > tipWidth - TRIANGLE_X_PADDING;
-
-        if (isTriangleRightOverflow) {
-          tipXCoord = statX
-            - (tipWidth + TRIANGLE_SHORT_SIDE + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2);
-          tipYCoord = statY - tipHeight / 2;
-
-          triangleXCoord = tipWidth;
-          triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
-          triangleClassName += ' rotate-[-90deg] translate-x-[-20%]';
-        } else {
-          tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
-            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
-
-          triangleYCoord = tipHeight;
-          triangleClassName += ' translate-y-[-20%]';
-        }
-      } else if (isTipLeftOverflow) {
-        tipXCoord = TIP_X_PADDING;
-        triangleXCoord = statX - tipXCoord - TRIANGLE_LONG_SIDE / 2;
-
-        const isTriangleLeftOverflow = triangleXCoord < TRIANGLE_X_PADDING;
-
-        if (isTriangleLeftOverflow) {
-          tipXCoord = statX + TRIANGLE_SHORT_SIDE
-            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + circleWidth / 2;
-          tipYCoord = statY - tipHeight / 2;
-
-          triangleXCoord = 0 - TRIANGLE_SHORT_SIDE;
-          triangleYCoord = tipHeight / 2 - TRIANGLE_LONG_SIDE / 2;
-          triangleClassName += ' rotate-[90deg]';
-        } else {
-          tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
-            + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
-
-          triangleYCoord = tipHeight;
-          triangleClassName += ' translate-y-[-20%]';
-        }
-      } else {
-        tipXCoord = statX - tipWidth / 2;
-
-        tipYCoord = statY - (tipHeight + TRIANGLE_SHORT_SIDE
-          + GAP_BETWEEN_TRIANGLE_AND_CIRCLE + (circleHeight / 2));
-
-        triangleXCoord = tipWidth / 2 - TRIANGLE_LONG_SIDE / 2;
-        triangleYCoord = tipHeight;
-        triangleClassName += ' translate-y-[-20%]';
-      }
-    }
-
-    return {
-      tipXCoord,
-      tipYCoord,
-      triangleXCoord,
-      triangleYCoord,
-      triangleClassName,
-      circleXCoord,
-      circleYCoord,
-      verticalLineX,
-      verticalLineY,
-      verticalLineHeight,
-      verticalLinePath,
-    };
-  }, [calcTipMetrics, tipConfig]);
+  const styleParams = useMemo(() => (
+    calcStyleParams(
+      inferTipMetrics(),
+      tipConfig,
+      TIP_X_PADDING,
+      VERTICAL_LINE_WIDTH_PX,
+      TRIANGLE_SHORT_SIDE,
+      TRIANGLE_LONG_SIDE,
+      TRIANGLE_X_PADDING,
+      GAP_BETWEEN_TRIANGLE_AND_CIRCLE,
+    )
+  ), [inferTipMetrics, tipConfig]);
 
   const dateStr = `${tipConfig?.weekday}, ${tipConfig?.month} ${tipConfig?.day}, ${tipConfig?.year}`;
   const amount = `$${formatAmount(tipConfig?.amount || 0)}`;
@@ -177,16 +207,18 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
   return (
     <>
       <svg
-        className="absolute w-[2px] transition-[opacity] duration-150 ease-in-out"
+        className="absolute transition-[opacity] duration-150 ease-in-out"
         version="1.1"
         xmlns="http://www.w3.org/2000/svg"
         style={{
+          width: `${VERTICAL_LINE_WIDTH_PX}px`,
+          height: `${styleParams.verticalLineHeight}px`,
+          top: `${styleParams.verticalLineY}px`,
+          left: `${styleParams.verticalLineX}px`,
           opacity: isActive ? '1' : '0',
           pointerEvents: isActive ? 'all' : 'none',
-          left: `${styleParams.verticalLineX}px`,
-          top: `${styleParams.verticalLineY}px`,
-          height: `${styleParams.verticalLineHeight}px`,
         }}
+        data-testid="tipVerticalLineSvg"
       >
         <path
           d={styleParams.verticalLinePath}
@@ -194,6 +226,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
           strokeWidth="4"
           stroke="#CACACE"
           strokeDasharray="5,5"
+          data-testid="tipVerticalLinePath"
         />
       </svg>
       <span
@@ -201,20 +234,21 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
         className="absolute w-[16px] h-[16px] flex justify-center items-center rounded-[50%]
           bg-white shadow-[0_4px_10px_0_rgba(77,100,255,0.5)] transition-[opacity] duration-150 ease-in-out"
         style={{
+          top: `${styleParams.circleYCoord}px`,
+          left: `${styleParams.circleXCoord}px`,
           opacity: isActive ? '1' : '0',
           pointerEvents: isActive ? 'all' : 'none',
-          left: `${styleParams.circleXCoord}px`,
-          top: `${styleParams.circleYCoord}px`,
         }}
+        data-testid="tipCircleSpan"
       >
         <span className="w-[6px] h-[6px] rounded-[50%] bg-blue" />
       </span>
       <div
         id={id}
-        className="absolute w-auto transition-[left_top_opacity] duration-150 ease-in-out"
+        className="absolute z-[1] w-auto transition-[left_top_opacity] duration-150 ease-in-out"
         style={{
-          left: `${styleParams.tipXCoord}px`,
           top: `${styleParams.tipYCoord}px`,
+          left: `${styleParams.tipXCoord}px`,
           opacity: isActive ? '1' : '0',
           pointerEvents: isActive ? 'all' : 'none',
         }}
@@ -227,16 +261,26 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
           ref={tipRef}
           className={`relative w-full min-w-[200px] flex flex-col justify-start items-start gap-[10px] 
             p-[16px_12px_12px_12px] rounded-[8px] bg-white shadow-[0_20px_40px_0_rgba(208,213,221,0.5)]`}
+          data-testid="currentStatsTip"
         >
-          <p className="font-tthoves font-medium text-[14px] text-grey-500">
+          <p
+            className="font-tthoves font-medium text-[14px] text-grey-500"
+            data-testid="tipDateParagraph"
+          >
             {dateStr}
           </p>
           <div className="w-full flex justify-start items-center gap-[8px] p-[8px] rounded-[8px] bg-[#F3F4F7]">
             <RevenueIcon className="w-[24px] h-auto" />
-            <p className="font-tthoves font-medium text-[14px] text-grey-500">
+            <p
+              className="font-tthoves font-medium text-[14px] text-grey-500"
+              data-testid="tipProfitOrLossParagraph"
+            >
               {(tipConfig?.amount || 0) >= 0 ? 'Profit' : 'Loss'}
             </p>
-            <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+            <p
+              className="font-tthoves font-medium text-[16px] text-darkBlue"
+              data-testid="tipAmountParagraph"
+            >
               {amount}
             </p>
           </div>
@@ -251,6 +295,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
               left: `${styleParams.triangleXCoord}px`,
               top: `${styleParams.triangleYCoord}px`,
             }}
+            data-testid="tipTriangleSvg"
           >
             <path d="M7.44115 7.50231C6.65435 8.31998 5.34565 8.31998 4.55885 7.50231L0.598648 3.38675C-0.623995 2.11615 0.27648 1.25385e-06 2.0398 1.11324e-06L9.96019 4.81637e-07C11.7235 3.41023e-07 12.624 2.11614 11.4014 3.38675L7.44115 7.50231Z" fill="white" />
           </svg>

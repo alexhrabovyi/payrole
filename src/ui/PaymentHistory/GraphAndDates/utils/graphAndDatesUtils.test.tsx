@@ -370,8 +370,8 @@ describe('GraphAndDates utility functions', () => {
       // line as one above, but it also goes to the zeroLine Y coord at the maxXCoord and then
       // to the zeroLine Y coord at the minXCoord and connects with the beginning, and fills
       <path
-        key="M 0 3250 L 10 1860 L 20 13730 L 30 8120 L 40 5810 L 50 17880 L 60 17780 L 70 28280 L 80 3490 L 90 100 L 100 4080 L 0 4080 Z"
-        d="M 0 3250 L 10 1860 L 20 13730 L 30 8120 L 40 5810 L 50 17880 L 60 17780 L 70 28280 L 80 3490 L 90 100 L 100 4080 L 0 4080 Z"
+        key="M 0 3250 L 10 1860 L 20 13730 L 30 8120 L 40 5810 L 50 17880 L 60 17780 L 70 28280 L 80 3490 L 90 100 L 100 100 L 0 100 Z"
+        d="M 0 3250 L 10 1860 L 20 13730 L 30 8120 L 40 5810 L 50 17880 L 60 17780 L 70 28280 L 80 3490 L 90 100 L 100 100 L 0 100 Z"
         fill="url(#greenGradient)"
         opacity="0.3"
         stroke="none"
@@ -398,8 +398,8 @@ describe('GraphAndDates utility functions', () => {
       // line as one above, but it also goes to the zeroLine Y coord at the maxXCoord and then
       // to the zeroLine Y coord at the minXCoord and connects with the beginning, and fills
       <path
-        key="M 0 100 L 10 13619.1 L 20 21547.1 L 30 28893.13 L 40 13258.630000000001 L 50 26517.36 L 60 9374.529999999999 L 70 835.6899999999996 L 80 3479.1900000000032 L 90 20444.030000000002 L 100 30131.100000000002 L 0 30131.100000000002 Z"
-        d="M 0 100 L 10 13619.1 L 20 21547.1 L 30 28893.13 L 40 13258.630000000001 L 50 26517.36 L 60 9374.529999999999 L 70 835.6899999999996 L 80 3479.1900000000032 L 90 20444.030000000002 L 100 30131.100000000002 L 0 30131.100000000002 Z"
+        key="M 0 100 L 10 13619.1 L 20 21547.1 L 30 28893.13 L 40 13258.630000000001 L 50 26517.36 L 60 9374.529999999999 L 70 835.6899999999996 L 80 3479.1900000000032 L 90 20444.030000000002 L 100 0 L 0 0 Z"
+        d="M 0 100 L 10 13619.1 L 20 21547.1 L 30 28893.13 L 40 13258.630000000001 L 50 26517.36 L 60 9374.529999999999 L 70 835.6899999999996 L 80 3479.1900000000032 L 90 20444.030000000002 L 100 0 L 0 0 Z"
         fill="url(#redGradient)"
         opacity="0.3"
         stroke="none"

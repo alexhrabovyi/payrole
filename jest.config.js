@@ -18,7 +18,6 @@ const customConfig = {
   testEnvironment: 'jsdom',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-
   },
   reporters: [
     "default",

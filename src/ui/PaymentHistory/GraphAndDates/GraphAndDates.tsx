@@ -1,8 +1,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
-import { KeyboardEventHandler, PointerEventHandler, useCallback, useMemo, useRef, useState } from 'react';
+import { KeyboardEventHandler, PointerEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { PaymentAndTransactionMetrics } from '@/ui/PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
 import {
   calcMinMaxAmount, calcMinMaxCoords, calcXYSteps,
@@ -45,18 +44,12 @@ export interface FillProps {
 interface GraphAndDatesProps {
   readonly paymentStats: FormattedPaymentStats[];
   readonly isFullScreenOn: boolean,
-  readonly wrapperMetrics: PaymentAndTransactionMetrics | null;
+  readonly widthProp: number | null;
 }
 
 const GraphAndDates: React.FC<GraphAndDatesProps> = ({
-  paymentStats, isFullScreenOn, wrapperMetrics,
+  paymentStats, isFullScreenOn, widthProp,
 }) => {
-  const graphAndDatesBlockRef = useRef<HTMLDivElement | null>(null);
-  const svgWrapperRef = useRef<null | HTMLDivElement>(null);
-
-  const [isTipActive, setIsTipActive] = useState(false);
-  const [activeStatsIndex, setActiveStatsIndex] = useState(0);
-
   const STATS_TIP_ID = 'statsTip';
 
   const TOP_INDENT_PX = 60;
@@ -77,32 +70,40 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     opacity: '0.3',
   }), []);
 
-  const svgMetrics = useMemo<SvgMetrics | undefined>(() => {
-    const svgWrapper = svgWrapperRef.current;
+  const graphAndDatesBlockRef = useRef<HTMLDivElement | null>(null);
+  const svgWrapperRef = useRef<null | HTMLDivElement>(null);
 
-    if (!svgWrapper || !wrapperMetrics) return;
+  const [graphAndDatesEl, setGraphAndDatesEl] = useState<HTMLDivElement | null>(null);
+  const [svgWrapperEl, setSvgWrapperEl] = useState<null | HTMLDivElement>(null);
+  const [isTipActive, setIsTipActive] = useState(false);
+  const [activeStatsIndex, setActiveStatsIndex] = useState(0);
 
-    let width: number;
-
-    if (isFullScreenOn) {
-      width = wrapperMetrics.width;
-    } else {
-      width = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
+  useEffect(() => {
+    if (graphAndDatesBlockRef.current !== graphAndDatesEl) {
+      setGraphAndDatesEl(graphAndDatesBlockRef.current);
     }
 
-    const height = svgWrapper.offsetHeight;
+    if (svgWrapperRef.current !== svgWrapperEl) {
+      setSvgWrapperEl(svgWrapperRef.current);
+    }
+  }, [graphAndDatesEl, svgWrapperEl]);
 
-    const { x: windowX, y: windowY } = svgWrapper.getBoundingClientRect();
+  const svgMetrics = useMemo<SvgMetrics | undefined>(() => {
+    if (!svgWrapperEl || !widthProp) return;
+
+    const height = svgWrapperEl.offsetHeight;
+
+    const { x: windowX, y: windowY } = svgWrapperEl.getBoundingClientRect();
     const pageX = windowX + window.scrollX;
     const pageY = windowY + window.scrollY;
 
     return {
-      width,
+      width: widthProp,
       height,
       pageX,
       pageY,
     };
-  }, [isFullScreenOn, wrapperMetrics]);
+  }, [svgWrapperEl, widthProp]);
 
   const minMaxAmount = useMemo(() => calcMinMaxAmount(paymentStats), [paymentStats]);
   const minMaxCoords = useMemo(
@@ -256,22 +257,20 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
   }
 
   function onGraphAndDatesOut(e: PointerEvent) {
-    const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const nextElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
 
-    if (!nextElem && graphAndDatesBlock) {
-      graphAndDatesBlock.removeEventListener('pointermove', onGraphAndDatesMove);
-      graphAndDatesBlock.removeEventListener('pointerout', onGraphAndDatesOut);
+    if (!nextElem && graphAndDatesEl) {
+      graphAndDatesEl.removeEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesEl.removeEventListener('pointerout', onGraphAndDatesOut);
 
       setIsTipActive(false);
     }
   }
 
   const onGraphAndDatesOver: PointerEventHandler<HTMLDivElement> = (e) => {
-    const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const { clientX, pointerType, pointerId } = e;
 
-    if (!graphAndDatesBlock || pointerType !== 'mouse' || !clientX || !svgMetrics) return;
+    if (!graphAndDatesEl || pointerType !== 'mouse' || !clientX || !svgMetrics) return;
 
     const prevElem = (e.relatedTarget as HTMLElement | null)?.closest('#graphAndDatesBlock');
 
@@ -282,34 +281,31 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       setActiveStatsIndex(newIndex!);
       setIsTipActive(true);
 
-      graphAndDatesBlock.setPointerCapture(pointerId);
+      graphAndDatesEl.setPointerCapture(pointerId);
 
-      graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
-      graphAndDatesBlock.addEventListener('pointerout', onGraphAndDatesOut);
+      graphAndDatesEl.addEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesEl.addEventListener('pointerout', onGraphAndDatesOut);
     }
   };
 
   function onGraphAndDatesUp() {
-    const graphAndDatesBlock = graphAndDatesBlockRef.current;
-
-    if (!graphAndDatesBlock) return;
+    if (!graphAndDatesEl) return;
 
     document.body.style.overflow = '';
     document.body.style.touchAction = '';
     document.body.style.userSelect = '';
     document.body.style.webkitUserSelect = '';
 
-    graphAndDatesBlock.removeEventListener('pointermove', onGraphAndDatesMove);
-    graphAndDatesBlock.removeEventListener('pointerup', onGraphAndDatesUp);
+    graphAndDatesEl.removeEventListener('pointermove', onGraphAndDatesMove);
+    graphAndDatesEl.removeEventListener('pointerup', onGraphAndDatesUp);
 
     setIsTipActive(false);
   }
 
   const onGraphAndDatesDown: PointerEventHandler<HTMLDivElement> = (e) => {
-    const graphAndDatesBlock = graphAndDatesBlockRef.current;
     const { clientX, pointerType, pointerId } = e;
 
-    if (graphAndDatesBlock && clientX && svgMetrics && pointerType !== 'mouse') {
+    if (graphAndDatesEl && clientX && svgMetrics && pointerType !== 'mouse') {
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
       document.body.style.userSelect = 'none';
@@ -321,10 +317,10 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       setActiveStatsIndex(newIndex!);
       setIsTipActive(true);
 
-      graphAndDatesBlock.setPointerCapture(pointerId);
+      graphAndDatesEl.setPointerCapture(pointerId);
 
-      graphAndDatesBlock.addEventListener('pointermove', onGraphAndDatesMove);
-      graphAndDatesBlock.addEventListener('pointerup', onGraphAndDatesUp);
+      graphAndDatesEl.addEventListener('pointermove', onGraphAndDatesMove);
+      graphAndDatesEl.addEventListener('pointerup', onGraphAndDatesUp);
     }
   };
 
@@ -342,6 +338,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       aria-label="This is a chart for the chosen period.
         You can use keyboard arrows and other keys to change day which payment information is displayed for."
       aria-describedby={STATS_TIP_ID}
+      data-testid="graphAndDates"
     >
       <CurrentStatsTip
         id={STATS_TIP_ID}
@@ -351,6 +348,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       <div
         ref={svgWrapperRef}
         className="w-full h-full max-h-[265px]"
+        data-testid="graphAndDatesSvgWrapper"
       >
         <svg
           className="w-full h-full"
@@ -370,7 +368,10 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
           {graphElems}
         </svg>
       </div>
-      <div className="relative w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400">
+      <div
+        className="relative w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400"
+        data-testid="dateElemsBlock"
+      >
         {dateElems}
       </div>
     </div>

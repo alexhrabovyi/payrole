@@ -110,23 +110,27 @@ interface PaymentHistoryProps {
 const PaymentHistory: React.FC<PaymentHistoryProps> = (
   { isFullScreenOn, setIsFullScreenOn, wrapperMetrics },
 ) => {
+  const BORDER_WIDTH_PX = 1;
+
   const paymentComponentRef = useRef<HTMLDivElement | null>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
 
   const componentWidth = useMemo(() => {
-    let width = '100%';
+    if (!wrapperMetrics) return;
 
-    if (!wrapperMetrics) return width;
+    let width: number;
 
     if (isFullScreenOn) {
-      width = `${wrapperMetrics.width}px`;
+      width = wrapperMetrics.width;
     } else {
-      width = `${(wrapperMetrics.width - wrapperMetrics.colGap) / 2}px`;
+      width = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
     }
 
     return width;
   }, [isFullScreenOn, wrapperMetrics]);
+
+  const graphAndDatesWidth = componentWidth ? componentWidth - BORDER_WIDTH_PX * 2 : null;
 
   const formattedAllPaymentStats = useMemo(() => {
     const last366DaysStatObjs = paymentStats.slice(366);
@@ -242,7 +246,8 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     setIsFullScreenOn((currentState) => !currentState);
   }
 
-  let mainDivClassName = 'min-h-[500px] flex flex-col justify-start items-start gap-[10px] border-grey';
+  let mainDivClassName = `min-h-[500px] flex flex-col justify-start items-start gap-[10px]
+    border-[${BORDER_WIDTH_PX}px] border-solid border-grey-200 rounded-[16px]`;
   if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
 
   const paymentComponentOnTransitionEnd: TransitionEventHandler<HTMLDivElement> = (e) => {
@@ -256,7 +261,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       ref={paymentComponentRef}
       className={mainDivClassName}
       style={{
-        width: componentWidth,
+        width: componentWidth ? `${componentWidth}px` : '100%',
       }}
       onTransitionEnd={paymentComponentOnTransitionEnd}
       data-testid="paymentHistory"
@@ -352,7 +357,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       <GraphAndDates
         paymentStats={currentPeriodFormattedPaymentStats}
         isFullScreenOn={isFullScreenOn}
-        wrapperMetrics={wrapperMetrics}
+        widthProp={graphAndDatesWidth}
       />
     </div>
   );
