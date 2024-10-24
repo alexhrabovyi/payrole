@@ -115,6 +115,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
   const paymentComponentRef = useRef<HTMLDivElement | null>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
+  const [prevIsFullScreenOn, setPrevIsFullScreenOn] = useState(isFullScreenOn);
 
   const componentWidth = useMemo(() => {
     if (!wrapperMetrics) return;
@@ -235,14 +236,6 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     It's ${comparePercent}% ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
 
   function fullScreenButtonOnClick() {
-    const paymentComponent = paymentComponentRef.current;
-
-    if (!paymentComponent) return;
-
-    paymentComponent.style.transitionDuration = '150ms';
-    paymentComponent.style.transitionProperty = 'all';
-    paymentComponent.style.transitionTimingFunction = 'ease-in-out';
-
     setIsFullScreenOn((currentState) => !currentState);
   }
 
@@ -255,6 +248,16 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     (e.target as HTMLElement).style.transitionProperty = '';
     (e.target as HTMLElement).style.transitionTimingFunction = '';
   };
+
+  const paymentComponent = paymentComponentRef.current;
+
+  if (paymentComponent && (isFullScreenOn !== prevIsFullScreenOn)) {
+    paymentComponent.style.transitionDuration = '150ms';
+    paymentComponent.style.transitionProperty = 'all';
+    paymentComponent.style.transitionTimingFunction = 'ease-in-out';
+
+    setPrevIsFullScreenOn(!prevIsFullScreenOn);
+  }
 
   return (
     <div

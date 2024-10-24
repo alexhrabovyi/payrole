@@ -7,13 +7,15 @@ import LogoIcon from './imgs/logo.svg';
 
 interface LogoProps {
   widthCls?: string,
+  addCls?: string,
 }
 
-const Logo: React.FC<LogoProps> = ({ widthCls }) => (
+const Logo: React.FC<LogoProps> = ({ widthCls, addCls }) => (
   <Link
     className={clsx(
       'group px-[7px]',
       widthCls || 'w-[113px]',
+      addCls,
     )}
     href={links.dashboard}
     aria-label="Payrole Dashboard"

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { TransitionEventHandler, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -48,6 +48,12 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
     leftPos = '0px';
   }
 
+  const transactionComponentOnTransitionEnd: TransitionEventHandler<HTMLDivElement> = (e) => {
+    (e.target as HTMLElement).style.transitionDuration = '';
+    (e.target as HTMLElement).style.transitionProperty = '';
+    (e.target as HTMLElement).style.transitionTimingFunction = '';
+  };
+
   const transactionComponent = transactionComponentRef.current;
 
   if (transactionComponent && (isPaymentFullScreenOn !== prevIsFullScreenOn)) {
@@ -55,12 +61,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
     transactionComponent.style.transitionProperty = 'all';
     transactionComponent.style.transitionTimingFunction = 'ease-in-out';
 
-    transactionComponent.addEventListener('transitionend', () => {
-      transactionComponent.style.transitionDuration = '';
-      transactionComponent.style.transitionProperty = '';
-      transactionComponent.style.transitionTimingFunction = '';
-      setPrevIsFullScreenOn(!prevIsFullScreenOn);
-    }, { once: true });
+    setPrevIsFullScreenOn(!prevIsFullScreenOn);
   }
 
   return (
@@ -74,6 +75,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
         top: topPos,
         left: leftPos,
       }}
+      onTransitionEnd={transactionComponentOnTransitionEnd}
     >
       <div className="w-full flex justify-between items-center">
         <h3 className="font-tthoves font-medium text-[20px] text-darkBlue">
