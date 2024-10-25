@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
@@ -18,7 +19,7 @@ interface NavLinkProps {
   href: string,
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ text, href }) => {
+const NavLink = memo<NavLinkProps>(({ text, href }) => {
   const path = usePathname();
 
   const logoClasses = clsx(
@@ -78,6 +79,6 @@ const NavLink: React.FC<NavLinkProps> = ({ text, href }) => {
       {text}
     </Link>
   );
-};
+});
 
 export default NavLink;

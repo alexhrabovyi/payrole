@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex */
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 /* eslint-disable jsx-a11y/click-events-have-key-events */
 /* eslint-disable jsx-a11y/no-static-element-interactions */
@@ -33,15 +34,11 @@ interface NavMenuStyleObj {
 
 interface SideNavProps {
   pxFromWhichStaticBehaviour: number,
-  minWidthInPx: number,
-  widthInPercent: number,
 }
 
-const SideNav: React.FC<SideNavProps> = ({
-  pxFromWhichStaticBehaviour,
-  minWidthInPx,
-  widthInPercent,
-}) => {
+const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
+  const NAV_MENU_ID = 'navMenu';
+
   const navPanelRef = useRef<HTMLDivElement | null>(null);
   const navMenuRef = useRef<HTMLElement | null>(null);
 
@@ -143,24 +140,46 @@ const SideNav: React.FC<SideNavProps> = ({
     if ((e.target as HTMLElement).closest('a')) setIsNavMenuOpen(false);
   };
 
+  const burgetBtnOnClick = useCallback(() => {
+    setIsNavMenuOpen(!isNavMenuOpen);
+
+    if (!isNavMenuOpen) {
+      navMenuRef.current?.focus();
+    }
+  }, [isNavMenuOpen]);
+
   if (windowMetrics.width >= pxFromWhichStaticBehaviour) {
     return (
       <div>
-        <nav className={`fixed top-0 left-0 min-w-[${minWidthInPx}px] w-[${widthInPercent}%] h-full 
+        <nav className={`fixed top-0 left-0 min-w-[220px] w-[14.58%] h-full 
           border-solid border-r-[1px] border-grey-200 px-[25px] xl:px-[1.3%] py-[32px]
           flex flex-col gap-[56px] justify-between items-stretch`}
         >
           <div className="flex flex-col justify-between items-start gap-[56px]">
             <Logo />
-            <div className="w-full flex flex-col justify-start items-stretch gap-[16px]">
-              <NavLink text="Home" href={links.dashboard} />
-              <NavLink text="Contracts" href={links.contracts} />
-              <NavLink text="Documents" href={links.documents} />
-              <NavLink text="Invoices" href={links.invoices} />
-              <NavLink text="Transactions" href={links.transactions} />
-              <NavLink text="Insurance" href={links.insurance} />
-              <NavLink text="Cards" href={links.cards} />
-            </div>
+            <ul className="w-full flex flex-col justify-start items-stretch gap-[16px]">
+              <li className="w-full">
+                <NavLink text="Home" href={links.dashboard} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Contracts" href={links.contracts} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Documents" href={links.documents} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Invoices" href={links.invoices} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Transactions" href={links.transactions} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Insurance" href={links.insurance} />
+              </li>
+              <li className="w-full">
+                <NavLink text="Cards" href={links.cards} />
+              </li>
+            </ul>
           </div>
           <NavLink text="Settings" href={links.settings} />
         </nav>
@@ -185,12 +204,14 @@ const SideNav: React.FC<SideNavProps> = ({
           paddingRight: `${navPanelMetrics.paddingRight}px`,
         }}
         onClick={navMenuOrPanelOnClick}
+        data-testid="navPanel"
       >
         {windowMetrics.width > 600 ? (
           <>
             <BurgerButton
               isOpen={isNavMenuOpen}
-              setIsOpen={setIsNavMenuOpen}
+              onClickHandler={burgetBtnOnClick}
+              controlsId={NAV_MENU_ID}
             />
             <Logo
               widthCls="w-[160px]"
@@ -200,7 +221,8 @@ const SideNav: React.FC<SideNavProps> = ({
           <div className="relative flex w-full">
             <BurgerButton
               isOpen={isNavMenuOpen}
-              setIsOpen={setIsNavMenuOpen}
+              onClickHandler={burgetBtnOnClick}
+              controlsId={NAV_MENU_ID}
             />
             <Logo
               widthCls="w-[160px]"
@@ -211,6 +233,7 @@ const SideNav: React.FC<SideNavProps> = ({
       </div>
       <nav
         ref={navMenuRef}
+        id={NAV_MENU_ID}
         className={clsx(
           `fixed left-0 z-[100] w-full max-w-[300px] px-[15px] pt-[40px] pb-[20px] bg-white 
           transition-[transform,opacity] duration-500 ease-in-out`,
@@ -218,19 +241,36 @@ const SideNav: React.FC<SideNavProps> = ({
         )}
         style={navMenuStyleObj}
         onClick={navMenuOrPanelOnClick}
+        tabIndex={-1}
+        aria-label="Navigation menu"
+        data-testid="navMenu"
       >
         <div
           className="w-full h-full flex flex-col gap-[56px] justify-between items-stretch"
         >
-          <div className="w-full flex flex-col justify-start items-stretch gap-[16px]">
-            <NavLink text="Home" href={links.dashboard} />
-            <NavLink text="Contracts" href={links.contracts} />
-            <NavLink text="Documents" href={links.documents} />
-            <NavLink text="Invoices" href={links.invoices} />
-            <NavLink text="Transactions" href={links.transactions} />
-            <NavLink text="Insurance" href={links.insurance} />
-            <NavLink text="Cards" href={links.cards} />
-          </div>
+          <ul className="w-full flex flex-col justify-start items-stretch gap-[16px]">
+            <li className="w-full">
+              <NavLink text="Home" href={links.dashboard} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Contracts" href={links.contracts} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Documents" href={links.documents} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Invoices" href={links.invoices} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Transactions" href={links.transactions} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Insurance" href={links.insurance} />
+            </li>
+            <li className="w-full">
+              <NavLink text="Cards" href={links.cards} />
+            </li>
+          </ul>
           <NavLink text="Settings" href={links.settings} />
         </div>
       </nav>
