@@ -38,6 +38,7 @@ interface SideNavProps {
 
 const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
   const NAV_MENU_ID = 'navMenu';
+  const NAV_LOGO_TEST_ID = 'navLogo';
 
   const navPanelRef = useRef<HTMLDivElement | null>(null);
   const navMenuRef = useRef<HTMLElement | null>(null);
@@ -151,9 +152,11 @@ const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
   if (windowMetrics.width >= pxFromWhichStaticBehaviour) {
     return (
       <div>
-        <nav className={`fixed top-0 left-0 min-w-[220px] w-[14.58%] h-full 
-          border-solid border-r-[1px] border-grey-200 px-[25px] xl:px-[1.3%] py-[32px]
-          flex flex-col gap-[56px] justify-between items-stretch`}
+        <nav
+          className={`fixed top-0 left-0 min-w-[220px] w-[14.58%] h-full 
+            border-solid border-r-[1px] border-grey-200 px-[25px] xl:px-[1.3%] py-[32px]
+            flex flex-col gap-[56px] justify-between items-stretch`}
+          data-testid="navMenu"
         >
           <div className="flex flex-col justify-between items-start gap-[56px]">
             <Logo />
@@ -194,6 +197,7 @@ const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
         style={{
           height: `${navPanelMetrics.height}px`,
         }}
+        data-testid="navTopSpan"
       />
       <div
         className="fixed top-0 left-0 z-[1000] w-full h-auto pl-[15px] flex justify-start
@@ -215,6 +219,7 @@ const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
             />
             <Logo
               widthCls="w-[160px]"
+              testId={NAV_LOGO_TEST_ID}
             />
           </>
         ) : (
@@ -227,6 +232,7 @@ const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
             <Logo
               widthCls="w-[160px]"
               addCls="absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]"
+              testId={NAV_LOGO_TEST_ID}
             />
           </div>
         )}
@@ -280,6 +286,7 @@ const SideNav: React.FC<SideNavProps> = ({ pxFromWhichStaticBehaviour }) => {
           isNavMenuOpen ? 'opacity-1 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
         onClick={() => setIsNavMenuOpen(false)}
+        data-testid="navBackdrop"
       />
     </>
   );

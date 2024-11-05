@@ -5,7 +5,23 @@ const SideNavPO = {
   navMenuClasses: {
     active: 'translate-x-0 opacity-1',
     inactive: 'translate-x-[-100%] opacity-0',
+    mobile: 'z-[100] w-full',
+    desktop: 'min-w-[220px] w-[14.58%]',
   },
+
+  navBackdropClasses: {
+    active: 'opacity-1 pointer-events-auto',
+    inactive: 'opacity-0 pointer-events-none',
+  },
+
+  testIds: {
+    navPanel: 'navPanel',
+    navMenu: 'navMenu',
+    navBackdrop: 'navBackdrop',
+    navTopSpan: 'navTopSpan',
+  },
+
+  logoAddCls: 'absolute left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]',
 
   render() {
     const PX_FROM_WHICH_STATIC_BEHAVIOUR = 1280;
@@ -46,6 +62,14 @@ const SideNavPO = {
 
   getNavMenu() {
     return screen.getByTestId('navMenu');
+  },
+
+  getNavBackdrop() {
+    return screen.getByTestId('navBackdrop');
+  },
+
+  getNavTopSpan() {
+    return screen.getByTestId('navTopSpan');
   },
 };
 

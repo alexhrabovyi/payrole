@@ -8,9 +8,10 @@ import LogoIcon from './imgs/logo.svg';
 interface LogoProps {
   widthCls?: string,
   addCls?: string,
+  testId?: string,
 }
 
-const Logo: React.FC<LogoProps> = ({ widthCls, addCls }) => (
+const Logo: React.FC<LogoProps> = ({ widthCls, addCls, testId }) => (
   <Link
     className={clsx(
       'group px-[7px]',
@@ -19,6 +20,7 @@ const Logo: React.FC<LogoProps> = ({ widthCls, addCls }) => (
     )}
     href={links.dashboard}
     aria-label="Payrole Dashboard"
+    data-testid={testId}
   >
     <LogoIcon className="w-full h-auto fill-darkBlue group-hover:fill-blue group-active:fill-blue-active transition-standart" />
   </Link>
