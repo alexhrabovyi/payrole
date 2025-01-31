@@ -5,57 +5,57 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import clsx from 'clsx';
 
-import HomeLogo from './imgs/home.svg';
-import ContractsLogo from './imgs/contracts.svg';
-import DocumentsLogo from './imgs/documents.svg';
-import InvoicesLogo from './imgs/invoices.svg';
-import TransactionsLogo from './imgs/transactions.svg';
-import InsuranceLogo from './imgs/insurance.svg';
-import CardsLogo from './imgs/cards.svg';
-import SettingsLogo from './imgs/settings.svg';
+import HomeIcon from './imgs/home.svg';
+import ContractsIcon from './imgs/contracts.svg';
+import DocumentsIcon from './imgs/documents.svg';
+import InvoicesIcon from './imgs/invoices.svg';
+import TransactionsIcon from './imgs/transactions.svg';
+import InsuranceIcon from './imgs/insurance.svg';
+import CardsIcon from './imgs/cards.svg';
+import SettingsIcon from './imgs/settings.svg';
 
 interface NavLinkProps {
-  text: string,
-  href: string,
+  readonly text: string,
+  readonly href: string,
 }
 
 const NavLink = memo<NavLinkProps>(({ text, href }) => {
   const path = usePathname();
 
-  const logoClasses = clsx(
+  const iconClasses = clsx(
     'w-[24px] h-auto group-active:fill-blue-active transition-standart',
     path === href ? 'fill-blue group-hover:fill-blue-hover' : 'fill-grey-400 group-hover:fill-blue',
   );
 
-  let Logo;
+  let Icon;
 
   switch (text) {
     case 'Home':
-      Logo = HomeLogo;
+      Icon = HomeIcon;
       break;
     case 'Contracts':
-      Logo = ContractsLogo;
+      Icon = ContractsIcon;
       break;
     case 'Documents':
-      Logo = DocumentsLogo;
+      Icon = DocumentsIcon;
       break;
     case 'Invoices':
-      Logo = InvoicesLogo;
+      Icon = InvoicesIcon;
       break;
     case 'Transactions':
-      Logo = TransactionsLogo;
+      Icon = TransactionsIcon;
       break;
     case 'Insurance':
-      Logo = InsuranceLogo;
+      Icon = InsuranceIcon;
       break;
     case 'Cards':
-      Logo = CardsLogo;
+      Icon = CardsIcon;
       break;
     case 'Settings':
-      Logo = SettingsLogo;
+      Icon = SettingsIcon;
       break;
     default:
-      Logo = HomeLogo;
+      Icon = HomeIcon;
   }
 
   return (
@@ -73,8 +73,8 @@ const NavLink = memo<NavLinkProps>(({ text, href }) => {
       href={href}
       aria-label={text}
     >
-      <Logo
-        className={logoClasses}
+      <Icon
+        className={iconClasses}
       />
       {text}
     </Link>

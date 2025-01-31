@@ -1,10 +1,10 @@
 import SideNav from '../SideNav/SideNav';
 
-interface Props {
+interface LayoutContainerProps {
   readonly children: React.ReactNode,
 }
 
-const LayoutContainer: React.FC<Props> = ({ children }) => {
+export default function LayoutContainer({ children }: LayoutContainerProps) {
   const PX_FROM_WHICH_STATIC_BEHAVIOUR = 1280;
 
   return (
@@ -15,6 +15,4 @@ const LayoutContainer: React.FC<Props> = ({ children }) => {
       {children}
     </div>
   );
-};
-
-export default LayoutContainer;
+}
