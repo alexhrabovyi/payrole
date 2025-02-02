@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import SideNav from './SideNav';
 
 const SideNavPO = {
@@ -57,19 +57,23 @@ const SideNavPO = {
   },
 
   getNavPanel() {
-    return screen.getByTestId('navPanel');
+    return screen.getByTestId(this.testIds.navPanel);
   },
 
   getNavMenu() {
-    return screen.getByTestId('navMenu');
+    return screen.getByTestId(this.testIds.navMenu);
   },
 
   getNavBackdrop() {
-    return screen.getByTestId('navBackdrop');
+    return screen.getByTestId(this.testIds.navBackdrop);
   },
 
   getNavTopSpan() {
-    return screen.getByTestId('navTopSpan');
+    return screen.getByTestId(this.testIds.navTopSpan);
+  },
+
+  clickOnBackdrop() {
+    fireEvent.click(this.getNavBackdrop());
   },
 };
 

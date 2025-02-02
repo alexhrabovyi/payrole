@@ -4,6 +4,63 @@ import SideNavPO from './SideNav.po';
 import BurgerButtonPO from './BurgerButton/BurgerButton.po';
 import LogoPO from '../Logo/Logo.po';
 
+/*
+FUNCTIONALITY DESCRIPTION / CHECKLIST
+
+=== General
+== windowWidth >= 1280px - desktop nav [DONE]
+== windowWidth < 1280px - mobile nav [DONE]
+== windowWidth <= 600px - Logo and BurgerBtn have add classes [DONE]
+== on resize event window metrics change [DONE]
+== closeOnMediaQuery: opened mobile nav, resize to windowWidth >= 1280px, resize back to
+windowWidth < 1280px - mobile nav is closed now [DONE]
+== toggleScrollBar:
+= opened: overflow: hidden, touch-action: none, paddingRight: scrollWidth [DONE]
+= closed: overflow: '', touch-action: '', paddingRight: '' [DONE]
+
+=== mobile nav open / close:
+== MobileMenu classes toggle on open / close [DONE]
+== Backdrop classes toggle on open / close [DONE]
+
+=== Menu or Panel on click: if <a> is clicked and Menu is opened - Menu closes [DONE]
+
+=== BurgerBtn
+== open / close: BurgerBtnPaths classes + values of aria-attributes on button [DONE]
+== on click: nav menu opens / closes + focus on menu if it opens [DONE]
+
+=== Backdrop
+== on click: closes nav menu if it's opened [DONE]
+
+=== NavPanel
+== on resize its metrics change (mostly, only width changes) [DONE]
+
+=== NavSpan
+== its height equals to height of the NavPanel
+
+=== NavMenu
+== navMenuMetrics: top: navPanelHeight, height: maxHeight, scroll: if content overflows
+*/
+
+function defineWindowWidth(windowWidth: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value: windowWidth,
+  });
+}
+
+function defineDocElWidth(docElWidth: number) {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    writable: true,
+    value: docElWidth,
+  });
+}
+
+function defineWindowAndDocElWidth(windowWidth: number, docElWidth: number) {
+  defineWindowWidth(windowWidth);
+  defineDocElWidth(docElWidth);
+}
+
 describe('SideNav function', () => {
   it('change of SideNav type by resing screen: desktop -> mobile -> destop', async () => {
     const DESKTOP_WINDOW_WIDTH = 1500;
@@ -11,11 +68,7 @@ describe('SideNav function', () => {
 
     const resizeEvent = new Event('resize');
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: DESKTOP_WINDOW_WIDTH,
-    });
+    defineWindowWidth(DESKTOP_WINDOW_WIDTH);
 
     SideNavPO.render();
 
@@ -26,11 +79,7 @@ describe('SideNav function', () => {
     expect(screen.queryByTestId(SideNavPO.testIds.navBackdrop)).not.toBeInTheDocument();
     expect(screen.queryByTestId(SideNavPO.testIds.navTopSpan)).not.toBeInTheDocument();
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(MOBILE_WINDOW_WIDTH);
 
     window.dispatchEvent(resizeEvent);
 
@@ -48,11 +97,7 @@ describe('SideNav function', () => {
       expect(SideNavPO.getNavTopSpan()).toBeInTheDocument();
     });
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: DESKTOP_WINDOW_WIDTH,
-    });
+    defineWindowWidth(DESKTOP_WINDOW_WIDTH);
 
     window.dispatchEvent(resizeEvent);
 
@@ -77,11 +122,7 @@ describe('SideNav function', () => {
 
     const resizeEvent = new Event('resize');
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(MOBILE_WINDOW_WIDTH);
 
     SideNavPO.render();
 
@@ -90,11 +131,7 @@ describe('SideNav function', () => {
     expect(SideNavPO.getNavMenu()).toHaveClass(SideNavPO.navMenuClasses.active);
     expect(BurgerButtonPO.getBurgerBtn()).toHaveAttribute('aria-expanded', 'true');
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: DESKTOP_WINDOW_WIDTH,
-    });
+    defineWindowWidth(DESKTOP_WINDOW_WIDTH);
 
     window.dispatchEvent(resizeEvent);
 
@@ -102,11 +139,7 @@ describe('SideNav function', () => {
       expect(screen.queryByTestId(SideNavPO.testIds.navPanel)).not.toBeInTheDocument();
     });
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(MOBILE_WINDOW_WIDTH);
 
     window.dispatchEvent(resizeEvent);
 
@@ -122,11 +155,7 @@ describe('SideNav function', () => {
   it('clicking on links should close mobile NavMenu', () => {
     const MOBILE_WINDOW_WIDTH = 900;
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(MOBILE_WINDOW_WIDTH);
 
     SideNavPO.render();
 
@@ -155,21 +184,13 @@ describe('SideNav function', () => {
 
     const resizeEvent = new Event('resize');
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(MOBILE_WINDOW_WIDTH);
 
     SideNavPO.render();
 
     expect(LogoPO.getLogo()).not.toHaveClass(SideNavPO.logoAddCls);
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      configurable: true,
-      value: XS_MOBILE_WINDOW_WIDTH,
-    });
+    defineWindowWidth(XS_MOBILE_WINDOW_WIDTH);
 
     window.dispatchEvent(resizeEvent);
 
@@ -184,15 +205,7 @@ describe('SideNav function', () => {
 
     const scrollWidth = WINDOW_WIDTH - DOCUMENT_ELEMENT_WIDTH;
 
-    Object.defineProperty(window, 'innerWidth', {
-      writable: true,
-      value: WINDOW_WIDTH,
-    });
-
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      writable: true,
-      value: DOCUMENT_ELEMENT_WIDTH,
-    });
+    defineWindowAndDocElWidth(WINDOW_WIDTH, DOCUMENT_ELEMENT_WIDTH);
 
     SideNavPO.render();
 
@@ -243,6 +256,77 @@ describe('SideNav function', () => {
     BurgerButtonPO.clickOnBurgerBtn();
 
     testOpenCloseSideNav(false);
+  });
+
+  it('opened -> click on backdrop -> closed', () => {
+    SideNavPO.render();
+
+    const navMenu = SideNavPO.getNavMenu();
+
+    expect(navMenu).toHaveClass(SideNavPO.navMenuClasses.inactive);
+
+    BurgerButtonPO.clickOnBurgerBtn();
+
+    expect(navMenu).toHaveClass(SideNavPO.navMenuClasses.active);
+
+    SideNavPO.clickOnBackdrop();
+
+    expect(navMenu).toHaveClass(SideNavPO.navMenuClasses.inactive);
+  });
+
+  it('NavPanel metrics change on resize (both in opened / closed state)', async () => {
+    function getNum(string: string) {
+      return Number(string.match(/\d+(.\d+)?/)?.[0]);
+    }
+
+    const resizeEvent = new Event('resize');
+
+    let windowWidth = 900;
+    let documentElementWidth = 870;
+
+    defineWindowAndDocElWidth(windowWidth, documentElementWidth);
+
+    SideNavPO.render();
+
+    const navPanel = SideNavPO.getNavPanel();
+
+    expect(getNum(navPanel.style.width)).toBe(documentElementWidth);
+
+    windowWidth = 1130;
+    documentElementWidth = 1100;
+
+    defineWindowAndDocElWidth(windowWidth, documentElementWidth);
+
+    window.dispatchEvent(resizeEvent);
+
+    await waitFor(() => {
+      expect(getNum(navPanel.style.width)).toBe(documentElementWidth);
+    });
+
+    BurgerButtonPO.clickOnBurgerBtn();
+
+    await waitFor(() => {
+      expect(getNum(navPanel.style.width)).toBe(windowWidth);
+    });
+
+    await waitFor(() => {
+      expect(getNum(navPanel.style.paddingRight)).toBe(windowWidth - documentElementWidth);
+    });
+
+    windowWidth = 720;
+    documentElementWidth = 700;
+
+    defineWindowAndDocElWidth(windowWidth, documentElementWidth);
+
+    window.dispatchEvent(resizeEvent);
+
+    await waitFor(() => {
+      expect(getNum(navPanel.style.width)).toBe(windowWidth);
+    });
+
+    await waitFor(() => {
+      expect(getNum(navPanel.style.paddingRight)).toBe(windowWidth - documentElementWidth);
+    });
   });
 
   // can't check since i can't define offsetHeight and other properties to the elements.

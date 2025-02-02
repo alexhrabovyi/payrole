@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback, useLayoutEffect, useRef, MouseEventHandler } from 'react';
+import { useState, useCallback, useLayoutEffect, useRef, MouseEventHandler, useEffect } from 'react';
 import clsx from 'clsx';
 
 import useOnResize from '@/hooks/useOnResize';
@@ -118,7 +118,7 @@ export default function SideNav({ pxFromWhichStaticBehaviour }: SideNavProps) {
     };
   }, [isNavMenuOpen]);
 
-  useLayoutEffect(toggleHiddingScrollBar, [toggleHiddingScrollBar]);
+  useEffect(toggleHiddingScrollBar, [toggleHiddingScrollBar]);
 
   const navMenuStyleObj: NavMenuStyleObj | undefined = (() => {
     const navPanelEl = navPanelRef.current;
@@ -193,7 +193,7 @@ export default function SideNav({ pxFromWhichStaticBehaviour }: SideNavProps) {
   }
 
   // since SSR anyway generates span, page content takes second column and grid
-  // works as expected, but it heavy relies on existences of span, so maybe i
+  // works as expected, but it heavily relies on existence of span, so maybe i
   // should use media queries in dashboard component to define column 2/3
 
   return (
@@ -250,7 +250,7 @@ export default function SideNav({ pxFromWhichStaticBehaviour }: SideNavProps) {
             id={NAV_MENU_ID}
             className={clsx(
               `fixed left-0 z-[100] w-full max-w-[300px] px-[15px] pt-[40px] pb-[20px] bg-white 
-          transition-[transform,opacity] duration-500 ease-in-out`,
+              transition-[transform,opacity] duration-500 ease-in-out`,
               isNavMenuOpen ? 'translate-x-0 opacity-1' : 'translate-x-[-100%] opacity-0',
             )}
             style={navMenuStyleObj}
