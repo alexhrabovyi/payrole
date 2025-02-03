@@ -84,7 +84,7 @@ export function divideDate(dateStr: string) {
 export function calcAndFormatCurrentPeriodTotalAmount(
   formattedPaymentStats: FormattedPaymentStats[],
 ): FormattedTotalAmount {
-  const totalAmount = +formattedPaymentStats.reduce((t, c) => t += c.amount, 0).toFixed(2);
+  const totalAmount = +formattedPaymentStats.reduce((t, c) => t + c.amount, 0).toFixed(2);
 
   const formattedTotalAmount = formatAmount(totalAmount);
   const integer = `$${formattedTotalAmount.match(/-?(\d+,)*(\d+)/)?.[0]}` || '';
@@ -107,17 +107,16 @@ interface PaymentHistoryProps {
   readonly wrapperMetrics: PaymentAndTransactionMetrics | null,
 }
 
-const PaymentHistory: React.FC<PaymentHistoryProps> = (
-  { isFullScreenOn, setIsFullScreenOn, wrapperMetrics },
-) => {
+export default function PaymentHistory(
+  { isFullScreenOn, setIsFullScreenOn, wrapperMetrics }: PaymentHistoryProps,
+) {
   const BORDER_WIDTH_PX = 1;
 
   const paymentComponentRef = useRef<HTMLDivElement | null>(null);
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
-  const [prevIsFullScreenOn, setPrevIsFullScreenOn] = useState(isFullScreenOn);
 
-  const componentWidth = useMemo(() => {
+  const componentWidth = (() => {
     if (!wrapperMetrics) return;
 
     let width: number;
@@ -129,11 +128,12 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     }
 
     return width;
-  }, [isFullScreenOn, wrapperMetrics]);
+  })();
 
   const graphAndDatesWidth = componentWidth ? componentWidth - BORDER_WIDTH_PX * 2 : null;
 
   const formattedAllPaymentStats = useMemo(() => {
+    // ============================== WHY 366?
     const last366DaysStatObjs = paymentStats.slice(366);
 
     const formattedPaymentStats: FormattedPaymentStats[] = [];
@@ -164,7 +164,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       startIndex = 0;
     }
 
-    const currentPaymentStats = formattedAllPaymentStats.slice(startIndex, endIndex);
+    const currentPaymentStats = formattedAllPaymentStats.slice(startIndex);
 
     return currentPaymentStats;
   }, [activeDateRangeBtn, formattedAllPaymentStats]);
@@ -236,7 +236,15 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     It's ${comparePercent}% ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
 
   function fullScreenButtonOnClick() {
-    setIsFullScreenOn((currentState) => !currentState);
+    setIsFullScreenOn(!isFullScreenOn);
+
+    const paymentComponent = paymentComponentRef.current;
+
+    if (paymentComponent) {
+      paymentComponent.style.transitionDuration = '150ms';
+      paymentComponent.style.transitionProperty = 'all';
+      paymentComponent.style.transitionTimingFunction = 'ease-in-out';
+    }
   }
 
   let mainDivClassName = `min-h-[500px] flex flex-col justify-start items-start gap-[10px]
@@ -248,16 +256,6 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
     (e.target as HTMLElement).style.transitionProperty = '';
     (e.target as HTMLElement).style.transitionTimingFunction = '';
   };
-
-  const paymentComponent = paymentComponentRef.current;
-
-  if (paymentComponent && (isFullScreenOn !== prevIsFullScreenOn)) {
-    paymentComponent.style.transitionDuration = '150ms';
-    paymentComponent.style.transitionProperty = 'all';
-    paymentComponent.style.transitionTimingFunction = 'ease-in-out';
-
-    setPrevIsFullScreenOn(!prevIsFullScreenOn);
-  }
 
   return (
     <div
@@ -364,6 +362,4 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = (
       />
     </div>
   );
-};
-
-export default PaymentHistory;
+}

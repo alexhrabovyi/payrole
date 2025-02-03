@@ -1,6 +1,6 @@
 import formatAmount from './formatAmount';
 
-function testFactory(table: Array<[number, string]>) {
+function testFactory(table: [number, string][]) {
   it.each(table)('%i should return %s', (num, expected) => {
     expect(formatAmount(num)).toBe(expected);
   });

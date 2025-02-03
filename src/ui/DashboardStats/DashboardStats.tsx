@@ -8,7 +8,7 @@ interface StatsProps {
   readonly type: 'total' | 'pending',
 }
 
-const DashboardStats: React.FC<StatsProps> = ({ type }) => {
+export default function DashboardStats({ type }: StatsProps) {
   let FirstIcon: FC<SVGProps<SVGElement>>;
   let SecondIcon: FC<SVGProps<SVGElement>>;
 
@@ -62,6 +62,4 @@ const DashboardStats: React.FC<StatsProps> = ({ type }) => {
       </div>
     </div>
   );
-};
-
-export default DashboardStats;
+}

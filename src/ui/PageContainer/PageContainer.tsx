@@ -2,10 +2,10 @@ interface ContainerProps {
   readonly children: React.ReactNode | React.ReactNode[],
 }
 
-const PageContainer: React.FC<ContainerProps> = ({ children }) => (
-  <div className="w-full px-[24px] pb-[195px] flex flex-col justify-start items-start gap-[24px]">
-    {children}
-  </div>
-);
-
-export default PageContainer;
+export default function PageContainer({ children }: ContainerProps) {
+  return (
+    <div className="w-full px-[24px] pb-[195px] flex flex-col justify-start items-start gap-[24px]">
+      {children}
+    </div>
+  );
+}

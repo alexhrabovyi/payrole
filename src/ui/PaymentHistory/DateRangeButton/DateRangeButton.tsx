@@ -10,13 +10,13 @@ interface ButtonProps {
   readonly children: React.ReactNode,
 }
 
-const DateRangeButton: React.FC<ButtonProps> = ({
+export default function DateRangeButton({
   dateBtnType,
   activeButton,
   setActiveButton,
   testid,
   children,
-}) => {
+}: ButtonProps) {
   const btnStandartClassname = `w-[36px] h-[30px] flex justify-center items-center font-tthoves 
     text-[14px] border-[1px] border-solid rounded-[8px] transition-standart`;
   const btnInactiveClassName = 'text-grey-500 hover:text-blue active:text-blue-active border-transparent';
@@ -49,6 +49,4 @@ const DateRangeButton: React.FC<ButtonProps> = ({
       {children}
     </button>
   );
-};
-
-export default DateRangeButton;
+}

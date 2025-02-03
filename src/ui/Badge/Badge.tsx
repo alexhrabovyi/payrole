@@ -6,7 +6,7 @@ interface BadgeProps {
   readonly children: React.ReactNode,
 }
 
-const Badge: React.FC<BadgeProps> = ({ isPositive, testid, children }) => {
+export default function Badge({ isPositive, testid, children }: BadgeProps) {
   const bgColor = isPositive ? 'text-green-100' : 'text-red-100';
   const textColor = isPositive ? 'bg-green-20' : 'bg-red-20';
 
@@ -18,6 +18,4 @@ const Badge: React.FC<BadgeProps> = ({ isPositive, testid, children }) => {
       {children}
     </div>
   );
-};
-
-export default Badge;
+}
