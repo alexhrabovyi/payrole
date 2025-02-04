@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
-import { KeyboardEventHandler, PointerEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
 import {
@@ -47,9 +47,9 @@ interface GraphAndDatesProps {
   readonly widthProp: number | null;
 }
 
-const GraphAndDates: React.FC<GraphAndDatesProps> = ({
+export default function GraphAndDates({
   paymentStats, isFullScreenOn, widthProp,
-}) => {
+}: GraphAndDatesProps) {
   const STATS_TIP_ID = 'statsTip';
 
   const TOP_INDENT_PX = 60;
@@ -78,7 +78,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
   const [isTipActive, setIsTipActive] = useState(false);
   const [activeStatsIndex, setActiveStatsIndex] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (graphAndDatesBlockRef.current !== graphAndDatesEl) {
       setGraphAndDatesEl(graphAndDatesBlockRef.current);
     }
@@ -194,7 +194,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     setIsTipActive(false);
   }
 
-  const onGraphAndDatesKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
+  function onGraphAndDatesKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (!statsWithCoords) return;
 
     const suitableKeyboardCodes = [
@@ -240,7 +240,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
 
       setActiveStatsIndex(newActiveStatsIndex!);
     }
-  };
+  }
 
   function onGraphAndDatesMove(e: PointerEvent) {
     e.preventDefault();
@@ -267,7 +267,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     }
   }
 
-  const onGraphAndDatesOver: PointerEventHandler<HTMLDivElement> = (e) => {
+  function onGraphAndDatesOver(e: React.PointerEvent<HTMLDivElement>) {
     const { clientX, pointerType, pointerId } = e;
 
     if (!graphAndDatesEl || pointerType !== 'mouse' || !clientX || !svgMetrics) return;
@@ -286,7 +286,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       graphAndDatesEl.addEventListener('pointermove', onGraphAndDatesMove);
       graphAndDatesEl.addEventListener('pointerout', onGraphAndDatesOut);
     }
-  };
+  }
 
   function onGraphAndDatesUp() {
     if (!graphAndDatesEl) return;
@@ -302,7 +302,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
     setIsTipActive(false);
   }
 
-  const onGraphAndDatesDown: PointerEventHandler<HTMLDivElement> = (e) => {
+  function onGraphAndDatesDown(e: React.PointerEvent<HTMLDivElement>) {
     const { clientX, pointerType, pointerId } = e;
 
     if (graphAndDatesEl && clientX && svgMetrics && pointerType !== 'mouse') {
@@ -322,7 +322,7 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       graphAndDatesEl.addEventListener('pointermove', onGraphAndDatesMove);
       graphAndDatesEl.addEventListener('pointerup', onGraphAndDatesUp);
     }
-  };
+  }
 
   return (
     <div
@@ -376,6 +376,4 @@ const GraphAndDates: React.FC<GraphAndDatesProps> = ({
       </div>
     </div>
   );
-};
-
-export default GraphAndDates;
+}

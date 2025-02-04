@@ -6,7 +6,6 @@ interface ButtonProps {
   readonly dateBtnType: ActiveDateRange,
   readonly activeButton: ActiveDateRange,
   readonly setActiveButton: Dispatch<SetStateAction<ActiveDateRange>>,
-  readonly testid: string,
   readonly children: React.ReactNode,
 }
 
@@ -14,7 +13,6 @@ export default function DateRangeButton({
   dateBtnType,
   activeButton,
   setActiveButton,
-  testid,
   children,
 }: ButtonProps) {
   const btnStandartClassname = `w-[36px] h-[30px] flex justify-center items-center font-tthoves 
@@ -27,6 +25,13 @@ export default function DateRangeButton({
     '3M': 'Show payment history chart for the last three months',
     '6M': 'Show payment history chart for the last half a year',
     '1Y': 'Show payment history chart for the last year',
+  };
+
+  const dataTestId: Record<ActiveDateRange, string> = {
+    '1M': 'rangeBtn-1m',
+    '3M': 'rangeBtn-3m',
+    '6M': 'rangeBtn-6m',
+    '1Y': 'rangeBtn-1y',
   };
 
   function onClick() {
@@ -44,7 +49,7 @@ export default function DateRangeButton({
       role="radio"
       aria-checked={dateBtnType === activeButton}
       aria-label={ariaLabelText[dateBtnType]}
-      data-testid={testid}
+      data-testid={dataTestId[dateBtnType]}
     >
       {children}
     </button>

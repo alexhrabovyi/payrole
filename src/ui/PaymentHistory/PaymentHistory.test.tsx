@@ -1,4 +1,5 @@
 /* eslint-disable indent */
+import { waitFor } from '@testing-library/react';
 import {
   calcAndFormatCurrentPeriodTotalAmount,
   FormattedPaymentStats,
@@ -7,6 +8,36 @@ import {
   ActiveDateRange,
 } from './PaymentHistory';
 import PaymentHistoryPO from './PaymentHistory.po';
+
+/*
+FUNCTIONALITY DESCRIPTION / CHECKLIST
+
+=== DateRangeBtn
+== on active/inactive:
+= classes [DONE]
+= aria-checked [DONE]
+= aria-label [DONE]
+== toggling [DONE]
+
+=== PaymentHistory
+== on fullscreen on/off: width [DONE]
+== totalAmount [DONE]
+== comparePercentStr [DONE]
+== compareText [DONE]
+== currentPeriodAmountLabelText [DONE]
+== animation [DONE]
+== on fullscreen: add class 'col-[1_/_3]' [DONE]
+== fullscreen btn:
+= aria-label [DONE]
+= classes (and icon itself) of icon [DONE]
+= toggling [DONE]
+
+=== divideDate [DONE]
+
+=== calcAndFormatCurrentPeriodTotalAmount [DONE]
+
+=== calcComparePercent [DONE]
+*/
 
 function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[] {
   return numsArr.map<FormattedPaymentStats>((num) => ({
@@ -20,8 +51,32 @@ function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[]
 }
 
 function testRangeBtnsFabric(testName: string, btns: ActiveDateRange[]) {
-  function shouldBeChecked(testBtn: ActiveDateRange, testedBtn: ActiveDateRange) {
-    return testBtn === testedBtn ? 'true' : 'false';
+  function testAriaChecked(testedBtn: ActiveDateRange) {
+    const rangeBtns = PaymentHistoryPO.getRangeBtns();
+
+    function shouldBeChecked(currentBtn: ActiveDateRange) {
+      return currentBtn === testedBtn ? 'true' : 'false';
+    }
+
+    expect(rangeBtns['1M']).toHaveAttribute('aria-checked', shouldBeChecked('1M'));
+    expect(rangeBtns['3M']).toHaveAttribute('aria-checked', shouldBeChecked('3M'));
+    expect(rangeBtns['6M']).toHaveAttribute('aria-checked', shouldBeChecked('6M'));
+    expect(rangeBtns['1Y']).toHaveAttribute('aria-checked', shouldBeChecked('1Y'));
+  }
+
+  function testActiveInactiveClasses(testedBtn: ActiveDateRange) {
+    const rangeBtns = PaymentHistoryPO.getRangeBtns();
+
+    function defineClasses(currentBtn: ActiveDateRange) {
+      if (currentBtn === testedBtn) return PaymentHistoryPO.rangeBtnsClasses.active;
+
+      return PaymentHistoryPO.rangeBtnsClasses.inactive;
+    }
+
+    expect(rangeBtns['1M']).toHaveClass(defineClasses('1M'));
+    expect(rangeBtns['3M']).toHaveClass(defineClasses('3M'));
+    expect(rangeBtns['6M']).toHaveClass(defineClasses('6M'));
+    expect(rangeBtns['1Y']).toHaveClass(defineClasses('1Y'));
   }
 
   it(testName, () => {
@@ -31,31 +86,77 @@ function testRangeBtnsFabric(testName: string, btns: ActiveDateRange[]) {
     const totalAmountParagraph = PaymentHistoryPO.getTotalAmountParagraph();
     const periodPercentBadge = PaymentHistoryPO.getPercentBadge();
     const compareTextParagraph = PaymentHistoryPO.getCompareTextParagraph();
+    const currentPeriodInfoBlock = PaymentHistoryPO.getCurrentPeriodInfoBlock();
 
-    expect(rangeBtns['1M']).toHaveAttribute('aria-checked', 'true');
-    expect(rangeBtns['3M']).toHaveAttribute('aria-checked', 'false');
-    expect(rangeBtns['6M']).toHaveAttribute('aria-checked', 'false');
-    expect(rangeBtns['1Y']).toHaveAttribute('aria-checked', 'false');
+    testAriaChecked('1M');
+    testActiveInactiveClasses('1M');
+
+    expect(rangeBtns['1M']).toHaveAttribute('aria-label', PaymentHistoryPO.rangeBtnsAriaLabelTexts['1M']);
 
     expect(totalAmountParagraph).toHaveTextContent(PaymentHistoryPO.amountsPerPeriod['1M']);
     expect(periodPercentBadge).toHaveTextContent(PaymentHistoryPO.percentPerPeriod['1M']);
     expect(compareTextParagraph).toHaveTextContent(PaymentHistoryPO.compareTextPerPeriod['1M']);
+    expect(currentPeriodInfoBlock).toHaveAttribute('aria-label', PaymentHistoryPO.createInfoBlockLabelText(
+      PaymentHistoryPO.amountsPerPeriod['1M'],
+      PaymentHistoryPO.percentPerPeriod['1M'],
+    ));
 
     btns.forEach((btn) => {
       PaymentHistoryPO.clickOnRangeBtn(btn);
 
-      expect(rangeBtns['1M']).toHaveAttribute('aria-checked', shouldBeChecked('1M', btn));
-      expect(rangeBtns['3M']).toHaveAttribute('aria-checked', shouldBeChecked('3M', btn));
-      expect(rangeBtns['6M']).toHaveAttribute('aria-checked', shouldBeChecked('6M', btn));
-      expect(rangeBtns['1Y']).toHaveAttribute('aria-checked', shouldBeChecked('1Y', btn));
+      testAriaChecked(btn);
+      testActiveInactiveClasses(btn);
+
+      expect(rangeBtns[btn]).toHaveAttribute('aria-label', PaymentHistoryPO.rangeBtnsAriaLabelTexts[btn]);
 
       expect(totalAmountParagraph).toHaveTextContent(PaymentHistoryPO.amountsPerPeriod[btn]);
       expect(periodPercentBadge).toHaveTextContent(PaymentHistoryPO.percentPerPeriod[btn]);
       expect(compareTextParagraph).toHaveTextContent(
         PaymentHistoryPO.compareTextPerPeriod[btn],
       );
+      expect(currentPeriodInfoBlock).toHaveAttribute('aria-label', PaymentHistoryPO.createInfoBlockLabelText(
+        PaymentHistoryPO.amountsPerPeriod[btn],
+        PaymentHistoryPO.percentPerPeriod[btn],
+      ));
     });
   });
+}
+
+async function testTogglingFullscreenBtn(
+  paymentHistory: HTMLElement,
+  fullScreenButton: HTMLElement,
+  isFullScreenOn: boolean,
+) {
+  const fullScreenBtnIcon = PaymentHistoryPO.getFullScreenBtnIcon();
+
+  expect(paymentHistory).toHaveStyle({
+    transitionDuration: '150ms',
+    transitionProperty: 'all',
+    transitionTimingFunction: 'ease-in-out',
+  });
+
+  await waitFor(() => {
+    expect(paymentHistory).toHaveStyle({
+      transitionDuration: '',
+      transitionProperty: '',
+      transitionTimingFunction: '',
+    });
+  });
+
+  if (isFullScreenOn) {
+    expect(paymentHistory).toHaveClass(PaymentHistoryPO.paymentHistoryFullScreenOnClass);
+    expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
+
+    expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
+
+    expect(fullScreenBtnIcon).toHaveClass(PaymentHistoryPO.fullScreenBtnIconClasses.on);
+  } else {
+    expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
+
+    expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
+
+    expect(fullScreenBtnIcon).toHaveClass(PaymentHistoryPO.fullScreenBtnIconClasses.off);
+  }
 }
 
 describe('PaymentHistory utility functions', () => {
@@ -162,7 +263,7 @@ describe('PaymentHistory utility functions', () => {
 
 describe('PaymentHistory function', () => {
   describe('toggle fullScreenButton', () => {
-    it('from off to on to off', () => {
+    it('from off to on to off', async () => {
       PaymentHistoryPO.render();
 
       const fullScreenButton = PaymentHistoryPO.getFullScreenBtn();
@@ -173,15 +274,13 @@ describe('PaymentHistory function', () => {
 
       PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
-      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
+      await testTogglingFullscreenBtn(paymentHistory, fullScreenButton, true);
 
       PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
-      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
+      await testTogglingFullscreenBtn(paymentHistory, fullScreenButton, false);
     });
-    it('from on to off to on', () => {
+    it('from on to off to on', async () => {
       PaymentHistoryPO.render(true);
 
       const fullScreenButton = PaymentHistoryPO.getFullScreenBtn();
@@ -192,13 +291,11 @@ describe('PaymentHistory function', () => {
 
       PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOffAriaLabelValue);
-      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.notFullScreenWidth}px` });
+      await testTogglingFullscreenBtn(paymentHistory, fullScreenButton, false);
 
       PaymentHistoryPO.clickOnFullScreenBtn();
 
-      expect(fullScreenButton).toHaveAttribute('aria-label', PaymentHistoryPO.fullScreenBtnOnAriaLabelValue);
-      expect(paymentHistory).toHaveStyle({ width: `${PaymentHistoryPO.fullScreenWidth}px` });
+      await testTogglingFullscreenBtn(paymentHistory, fullScreenButton, true);
     });
   });
 

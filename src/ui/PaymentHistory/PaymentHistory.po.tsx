@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
+import DateRangeButtonPO from './DateRangeButton/DateRangeButton.po';
 import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
-import PaymentHistory, { ActiveDateRange } from './PaymentHistory';
+import PaymentHistory from './PaymentHistory';
 
 const PaymentHistoryPO = {
   fullScreenBtnOffAriaLabelValue: 'Show payment history chart on fullscreen',
   fullScreenBtnOnAriaLabelValue: 'Close fullscreen payment history chart',
+
+  paymentHistoryFullScreenOnClass: 'col-[1_/_3]',
+
+  fullScreenBtnIconClasses: {
+    on: 'hover:scale-[0.8]',
+    off: 'hover:scale-[1.2]',
+  },
 
   amountsPerPeriod: {
     '1M': '$827.36',
@@ -32,10 +40,21 @@ const PaymentHistoryPO = {
   fullScreenWidth: 1500,
   notFullScreenWidth: 740,
 
+  createInfoBlockLabelText(totalAmountStr: string, comparePercentStr: string) {
+    const comparePercent = Number(comparePercentStr.match(/-?\d+/));
+    const formattedComparePercent = comparePercentStr.match(/-?\d+%/);
+    const formattedAmountStr = totalAmountStr.replace(/,/g, '');
+
+    const currentPeriodAmountLabelText = `${formattedAmountStr} is total amount for the chosen period of time. 
+    It's ${formattedComparePercent} ${comparePercent >= 0 ? 'rise' : 'fall'} comparing to the previous period of time`;
+
+    return currentPeriodAmountLabelText;
+  },
+
   render(
     initFullScreenOn: boolean = false,
   ) {
-    const { fullScreenWidth } = this;
+    const { fullScreenWidth, notFullScreenWidth } = this;
 
     const WrapperElement = () => {
       const [isFullScreenOn, setIsFullScreenOn] = useState(initFullScreenOn);
@@ -43,7 +62,7 @@ const PaymentHistoryPO = {
       const wrapperMetrics: PaymentAndTransactionMetrics = {
         width: fullScreenWidth,
         height: 500,
-        colGap: 20,
+        colGap: fullScreenWidth - (notFullScreenWidth * 2),
         rowGap: 20,
       };
 
@@ -67,24 +86,21 @@ const PaymentHistoryPO = {
     return screen.getByTestId('fullScreenButton');
   },
 
+  getFullScreenBtnIcon() {
+    return screen.getByTestId('fullScreenBtnIcon');
+  },
+
   clickOnFullScreenBtn() {
     fireEvent.click(this.getFullScreenBtn());
   },
 
-  getRangeBtns(): Record<ActiveDateRange, HTMLElement> {
-    return {
-      '1M': screen.getByTestId('rangeBtn-1m'),
-      '3M': screen.getByTestId('rangeBtn-3m'),
-      '6M': screen.getByTestId('rangeBtn-6m'),
-      '1Y': screen.getByTestId('rangeBtn-1y'),
-    };
-  },
+  rangeBtnsClasses: DateRangeButtonPO.classes,
 
-  clickOnRangeBtn(type: ActiveDateRange) {
-    const rangeBtns = this.getRangeBtns();
+  rangeBtnsAriaLabelTexts: DateRangeButtonPO.ariaLabelText,
 
-    fireEvent.click(rangeBtns[type]);
-  },
+  getRangeBtns: DateRangeButtonPO.getRangeBtns,
+
+  clickOnRangeBtn: DateRangeButtonPO.clickOnRangeBtn,
 
   getTotalAmountParagraph() {
     return screen.getByTestId('totalAmountParagraph');
@@ -96,6 +112,10 @@ const PaymentHistoryPO = {
 
   getCompareTextParagraph() {
     return screen.getByTestId('compareTextParagraph');
+  },
+
+  getCurrentPeriodInfoBlock() {
+    return screen.getByTestId('currentPeriodInfoBlock');
   },
 };
 

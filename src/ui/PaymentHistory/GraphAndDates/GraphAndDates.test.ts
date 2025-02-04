@@ -4,6 +4,10 @@ import { calcStyleParams, TipMetrics } from '../CurrentStatsTip/CurrentStatsTip'
 import GraphAndDatesPO from './GraphAndDates.po';
 import CurrentStatsTipPO from '../CurrentStatsTip/CurrentStatsTip.po';
 
+/*
+FUNCTIONALITY DESCRIPTION / CHECKLIST
+*/
+
 describe('GraphAndDates function', () => {
   describe('amount of date elems', () => {
     it('fullScreenOn = false', () => {

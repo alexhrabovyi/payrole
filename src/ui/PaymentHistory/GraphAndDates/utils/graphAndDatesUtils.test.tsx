@@ -5,6 +5,25 @@ import {
   MinMaxAmount, MinMaxCoords, createGraphElems, XYStepsType, createDateElems,
 } from './graphAndDatesUtils';
 
+/*
+FUNCTIONALITY DESCRIPTION / CHECKLIST
+
+=== calcXCoord []
+=== calcYCoord [DONE]
+=== calcNextAdditionalCoords [DONE]
+=== calcMinMaxAmount []
+=== calcMinMaxCoords []
+=== createStatsWithCoords []
+=== calcXYSteps [DONE]
+=== checkAmountType []
+=== startPath []
+=== isZeroLineNeeded [DONE]
+=== drawAndAddZeroLinePath []
+=== addGraphPaths []
+=== createGraphElems [DONE]
+=== createDateElems [DONE]
+*/
+
 const STROKE_PROPS: StrokeProps = {
   width: '2',
   colorGreen: '#0AAF60',

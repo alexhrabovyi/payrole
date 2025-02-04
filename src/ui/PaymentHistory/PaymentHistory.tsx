@@ -133,7 +133,6 @@ export default function PaymentHistory(
   const graphAndDatesWidth = componentWidth ? componentWidth - BORDER_WIDTH_PX * 2 : null;
 
   const formattedAllPaymentStats = useMemo(() => {
-    // ============================== WHY 366?
     const last366DaysStatObjs = paymentStats.slice(366);
 
     const formattedPaymentStats: FormattedPaymentStats[] = [];
@@ -282,7 +281,6 @@ export default function PaymentHistory(
                 dateBtnType="1M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
-                testid="rangeBtn-1m"
               >
                 1M
               </DateRangeButton>
@@ -290,7 +288,6 @@ export default function PaymentHistory(
                 dateBtnType="3M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
-                testid="rangeBtn-3m"
               >
                 3M
               </DateRangeButton>
@@ -298,7 +295,6 @@ export default function PaymentHistory(
                 dateBtnType="6M"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
-                testid="rangeBtn-6m"
               >
                 6M
               </DateRangeButton>
@@ -306,7 +302,6 @@ export default function PaymentHistory(
                 dateBtnType="1Y"
                 activeButton={activeDateRangeBtn}
                 setActiveButton={setActiveDateRangeBtn}
-                testid="rangeBtn-1y"
               >
                 1Y
               </DateRangeButton>
@@ -318,8 +313,18 @@ export default function PaymentHistory(
               aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on fullscreen'}
               data-testid="fullScreenButton"
             >
-              {isFullScreenOn ? <FullScreenOffIcon className="hover:scale-[0.8] transition-standart" />
-                : <FullScreenOnIcon className="hover:scale-[1.2] transition-standart" />}
+              {isFullScreenOn ? (
+                <FullScreenOffIcon
+                  className="hover:scale-[0.8] transition-standart"
+                  data-testid="fullScreenBtnIcon"
+                />
+              )
+                : (
+                  <FullScreenOnIcon
+                    className="hover:scale-[1.2] transition-standart"
+                    data-testid="fullScreenBtnIcon"
+                  />
+                )}
             </button>
           </div>
         </div>
@@ -329,6 +334,7 @@ export default function PaymentHistory(
           aria-atomic="true"
           aria-busy={!formattedAllPaymentStats}
           aria-label={currentPeriodAmountLabelText}
+          data-testid="currentPeriodInfoBlock"
         >
           <p
             className="font-tthoves font-medium text-[42px] text-darkBlue"
