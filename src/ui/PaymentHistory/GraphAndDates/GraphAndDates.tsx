@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { FormattedPaymentStats } from '@/ui/PaymentHistory/PaymentHistory';
 import {
@@ -39,6 +39,33 @@ export interface FillProps {
   colorGreen: string,
   colorRed: string,
   opacity: string,
+}
+
+export function inferNewActiveStatsIndex(
+  statsWithCoords: StatsWithCoords[] | undefined,
+  XStep: number | undefined,
+  x: number,
+) {
+  if (!statsWithCoords || !XStep) return;
+
+  const halfOfXStep = XStep / 2;
+
+  if (x <= 0) {
+    return 0;
+  }
+
+  if (x >= statsWithCoords[statsWithCoords.length - 1].x) {
+    return statsWithCoords.length - 1;
+  }
+
+  for (let i = 0; i < statsWithCoords.length; i += 1) {
+    const currentStatsMinX = statsWithCoords[i].x - halfOfXStep;
+    const currentStatsMaxX = statsWithCoords[i].x + halfOfXStep;
+
+    if (x >= currentStatsMinX && x <= currentStatsMaxX) {
+      return i;
+    }
+  }
 }
 
 interface GraphAndDatesProps {
@@ -163,29 +190,6 @@ export default function GraphAndDates({
     return newTipConfig;
   }, [activeStatsIndex, statsWithCoords, svgMetrics]);
 
-  const inferNewActiveStatsIndex = useCallback((x: number) => {
-    if (!statsWithCoords || !XStep) return;
-
-    const halfOfXStep = XStep / 2;
-
-    if (x <= 0) {
-      return 0;
-    }
-
-    if (x >= statsWithCoords[statsWithCoords.length - 1].x) {
-      return statsWithCoords.length - 1;
-    }
-
-    for (let i = 0; i < statsWithCoords.length; i += 1) {
-      const currentStatsMinX = statsWithCoords[i].x - halfOfXStep;
-      const currentStatsMaxX = statsWithCoords[i].x + halfOfXStep;
-
-      if (x >= currentStatsMinX && x <= currentStatsMaxX) {
-        return i;
-      }
-    }
-  }, [XStep, statsWithCoords]);
-
   function onGraphAndDatesFocus() {
     setIsTipActive(true);
   }
@@ -251,7 +255,7 @@ export default function GraphAndDates({
 
     const currentSvgX = clientX - svgMetrics.pageX;
 
-    const newIndex = inferNewActiveStatsIndex(currentSvgX);
+    const newIndex = inferNewActiveStatsIndex(statsWithCoords, XStep, currentSvgX);
 
     setActiveStatsIndex(newIndex!);
   }
@@ -276,7 +280,7 @@ export default function GraphAndDates({
 
     if (!prevElem) {
       const currentSvgX = clientX - svgMetrics.pageX;
-      const newIndex = inferNewActiveStatsIndex(currentSvgX);
+      const newIndex = inferNewActiveStatsIndex(statsWithCoords, XStep, currentSvgX);
 
       setActiveStatsIndex(newIndex!);
       setIsTipActive(true);
@@ -312,7 +316,7 @@ export default function GraphAndDates({
       document.body.style.webkitUserSelect = 'none';
 
       const currentSvgX = clientX - svgMetrics.pageX;
-      const newIndex = inferNewActiveStatsIndex(currentSvgX);
+      const newIndex = inferNewActiveStatsIndex(statsWithCoords, XStep, currentSvgX);
 
       setActiveStatsIndex(newIndex!);
       setIsTipActive(true);

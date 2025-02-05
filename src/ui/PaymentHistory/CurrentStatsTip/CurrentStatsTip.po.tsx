@@ -1,6 +1,17 @@
 import { screen } from '@testing-library/dom';
 
 const CurrentStatsTipPO = {
+  commonStyles: {
+    opacity: {
+      active: '1',
+      inactive: '0',
+    },
+    pointerEvents: {
+      active: 'all',
+      inactive: 'none',
+    },
+  },
+
   getVerticalLineSvg() {
     return screen.getByTestId('tipVerticalLineSvg');
   },
@@ -11,6 +22,10 @@ const CurrentStatsTipPO = {
 
   getCircleSpan() {
     return screen.getByTestId('tipCircleSpan');
+  },
+
+  getCurrentStatsTipWrapper() {
+    return screen.getByTestId('currentStatsTipWrapper');
   },
 
   getCurrentStatsTip() {

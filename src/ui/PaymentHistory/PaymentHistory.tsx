@@ -266,12 +266,12 @@ export default function PaymentHistory(
       onTransitionEnd={paymentComponentOnTransitionEnd}
       data-testid="paymentHistory"
     >
-      <div className="w-full flex flex-col justify-start items-start gap-[10px] px-[24px] pt-[24px]">
+      <div className="w-full flex flex-col justify-start items-start gap-[10px] p-[24px]">
         <div className="w-full flex justify-between items-center">
           <h2 className="font-tthoves font-medium text-[20px] text-darkBlue">
             Payment History
           </h2>
-          <div className="flex justify-start items-center gap-[40px]">
+          <div className="flex justify-start items-center gap-[25px] 2xl:gap-[40px]">
             <div
               className="flex justify-start items-center gap-[8px]"
               role="radiogroup"

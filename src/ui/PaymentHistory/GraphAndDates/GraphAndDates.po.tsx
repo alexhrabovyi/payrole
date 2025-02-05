@@ -1,47 +1,55 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import mockedFormattedPaymentStats from './formattedPaymentStats.mock.json';
-import GraphAndDates from './GraphAndDates';
+import GraphAndDates, { StatsWithCoords } from './GraphAndDates';
 import { FormattedPaymentStats } from '../PaymentHistory';
+import { calcMinMaxAmount, calcXYSteps, calcXCoord, calcYCoord, XYStepsType, createStatsWithCoords } from './utils/graphAndDatesUtils';
+import CurrentStatsTipPO from '../CurrentStatsTip/CurrentStatsTip.po';
 
 type KeyCode = 'ArrowUp' | 'ArrowLeft' | 'ArrowDown' | 'ArrowRight' | 'PageUp' | 'PageDown' | 'Home' | 'End';
 
 const GraphAndDatesPO = {
   width: 930,
   height: 500,
-  statsAmount: 31,
+  statsAmount: mockedFormattedPaymentStats.length,
 
   formattedPaymentStats: mockedFormattedPaymentStats as FormattedPaymentStats[],
 
   get minMaxAmount() {
-    const statsAmounts = this.formattedPaymentStats.map((fPS) => fPS.amount);
-    const minAmount = Math.min(...statsAmounts);
-    const maxAmount = Math.max(...statsAmounts);
+    return calcMinMaxAmount(this.formattedPaymentStats);
+  },
 
+  get minMaxCoords() {
     return {
-      min: minAmount,
-      max: maxAmount,
+      minXCoord: 0,
+      maxXCoord: 930,
+      minYCoord: 0,
+      maxYCoord: 500,
     };
   },
 
-  get xStep() {
-    return this.width / this.statsAmount;
-  },
-
-  get yStep() {
-    return this.height / (this.minMaxAmount.max - this.minMaxAmount.min);
+  get XYSteps() {
+    return calcXYSteps(this.minMaxAmount, this.minMaxCoords, this.statsAmount) as XYStepsType;
   },
 
   calcXCoord(index: number) {
-    return this.xStep * index;
+    return calcXCoord(index, this.XYSteps?.XStep);
   },
 
   calcYCoord(amount: number) {
-    return Math.abs((amount - this.minMaxAmount.min) * this.yStep - this.height);
+    return calcYCoord(amount, this.minMaxAmount.minAmount, this.XYSteps.YStep, 500);
+  },
+
+  get statsWithCoords() {
+    return createStatsWithCoords(
+      this.formattedPaymentStats,
+      this.minMaxAmount,
+      this.minMaxCoords,
+      this.XYSteps,
+    ) as StatsWithCoords[];
   },
 
   render(isFullScreenOn: boolean = false) {
-    const { width } = this;
-    const { formattedPaymentStats } = this;
+    const { width, formattedPaymentStats } = this;
 
     render(
       <GraphAndDates
@@ -50,30 +58,7 @@ const GraphAndDatesPO = {
         widthProp={width}
       />,
     );
-
-    // const { rerender } = render(
-    //   <GraphAndDates
-    //     isFullScreenOn={isFullScreenOn}
-    //     paymentStats={formattedPaymentStats}
-    //     widthProp={width}
-    //   />,
-    // );
-
-    // this.rerenderFunc = rerender;
   },
-
-  // rerender(isFullScreenOn: boolean = false) {
-  //   const { width } = this;
-  //   const { formattedPaymentStats } = this;
-
-  //   this.rerenderFunc(
-  //     <GraphAndDates
-  //       isFullScreenOn={isFullScreenOn}
-  //       paymentStats={formattedPaymentStats}
-  //       widthProp={width}
-  //     />,
-  //   );
-  // },
 
   getGraphAndDates() {
     return screen.getByTestId('graphAndDates');
@@ -85,6 +70,22 @@ const GraphAndDatesPO = {
 
   getDateElemsBlock() {
     return screen.getByTestId('dateElemsBlock');
+  },
+
+  getVerticalLineSvg() {
+    return CurrentStatsTipPO.getVerticalLineSvg();
+  },
+
+  getCircleSpan() {
+    return CurrentStatsTipPO.getCircleSpan();
+  },
+
+  getStatsTipWrapper() {
+    return CurrentStatsTipPO.getCurrentStatsTipWrapper();
+  },
+
+  getStatsTip() {
+    return CurrentStatsTipPO.getCurrentStatsTip();
   },
 
   fireKeyDownEvent(keyCode: KeyCode) {

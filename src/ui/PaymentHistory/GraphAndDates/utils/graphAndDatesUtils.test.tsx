@@ -1,25 +1,18 @@
 import { ReactNode } from 'react';
 import { FillProps, StatsWithCoords, StrokeProps } from '../GraphAndDates';
 import {
-  calcYCoord, calcNextAdditionalCoords, calcXYSteps, isZeroLineNeeded, AmountType,
+  calcXCoord, calcYCoord, calcNextAdditionalCoords, calcXYSteps, isZeroLineNeeded, AmountType,
   MinMaxAmount, MinMaxCoords, createGraphElems, XYStepsType, createDateElems,
 } from './graphAndDatesUtils';
 
 /*
 FUNCTIONALITY DESCRIPTION / CHECKLIST
 
-=== calcXCoord []
+=== calcXCoord [DONE]
 === calcYCoord [DONE]
 === calcNextAdditionalCoords [DONE]
-=== calcMinMaxAmount []
-=== calcMinMaxCoords []
-=== createStatsWithCoords []
 === calcXYSteps [DONE]
-=== checkAmountType []
-=== startPath []
 === isZeroLineNeeded [DONE]
-=== drawAndAddZeroLinePath []
-=== addGraphPaths []
 === createGraphElems [DONE]
 === createDateElems [DONE]
 */
@@ -129,6 +122,18 @@ function createDateElemsTestFabric(
 }
 
 describe('GraphAndDates utility functions', () => {
+  describe('function calcXCoord', () => {
+    it.each([
+      [10, 10, 100],
+      [2, 52.54, 105.08],
+      [49, 42.52, 2083.48],
+      [69, 782.92, 54021.48],
+      [0, 102.1, 0],
+    ])('index: %d, XStep: %d, XCoord should be: %d', (index, XStep, XCoord) => {
+      expect(calcXCoord(index, XStep)).toBeCloseTo(XCoord);
+    });
+  });
+
   describe('function calcYCoord', () => {
     it.each([
       {

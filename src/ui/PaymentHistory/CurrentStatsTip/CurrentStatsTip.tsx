@@ -1,16 +1,10 @@
 import {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 
 import formatAmount from '@/libs/formatAmount/formatAmount';
 import { TipConfig } from '../GraphAndDates/GraphAndDates';
 import RevenueIcon from './imgs/revenue_icon.svg';
-
-interface StatsTipProps {
-  id: string,
-  isActive: boolean
-  tipConfig: TipConfig | undefined,
-}
 
 export interface TipMetrics {
   tipWidth: number,
@@ -147,7 +141,13 @@ export function calcStyleParams(
   };
 }
 
-const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) => {
+interface StatsTipProps {
+  id: string,
+  isActive: boolean
+  tipConfig: TipConfig | undefined,
+}
+
+export default function CurrentStatsTip({ id, isActive, tipConfig }: StatsTipProps) {
   const TRIANGLE_LONG_SIDE = 12;
   const TRIANGLE_SHORT_SIDE = 9;
   const GAP_BETWEEN_TRIANGLE_AND_CIRCLE = 6;
@@ -161,7 +161,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
   const [tipEl, setTipEl] = useState<HTMLDivElement | null>(null);
   const [circleSpanEl, setCircleSpanEl] = useState<HTMLSpanElement | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (tipRef.current !== tipEl) {
       setTipEl(tipRef.current);
     }
@@ -256,6 +256,7 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
         aria-live="polite"
         aria-atomic="true"
         aria-busy={!tipConfig}
+        data-testid="currentStatsTipWrapper"
       >
         <div
           ref={tipRef}
@@ -303,6 +304,4 @@ const CurrentStatsTip: React.FC<StatsTipProps> = ({ id, isActive, tipConfig }) =
       </div>
     </>
   );
-};
-
-export default CurrentStatsTip;
+}

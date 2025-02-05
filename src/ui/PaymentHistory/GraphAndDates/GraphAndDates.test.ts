@@ -1,12 +1,117 @@
 /* eslint-disable testing-library/no-node-access */
-import { TipConfig } from './GraphAndDates';
-import { calcStyleParams, TipMetrics } from '../CurrentStatsTip/CurrentStatsTip';
+import { waitFor } from '@testing-library/react';
+import { inferNewActiveStatsIndex } from './GraphAndDates';
 import GraphAndDatesPO from './GraphAndDates.po';
 import CurrentStatsTipPO from '../CurrentStatsTip/CurrentStatsTip.po';
 
 /*
 FUNCTIONALITY DESCRIPTION / CHECKLIST
+svgMetrics???
+tipConfig (if currentActiveIndex >= statsWithCoords.length, currentActiveIndex = 0)???
+
+=== inferNewActiveStatsIndex
+== return if StatsWithCoords or XStep are undefined [DONE]
+== if x < 0, index = 0 [DONE]
+== if x > lastElement.x, index = index of lastElement [DONE]
+== x in the middle of SVGEl (standart situation) [DONE]
+
+=== onFocus
+== isTipActive = true [DONE] (could be checked internally by state or by styles of tip)
+
+=== onBlur
+== isTipActive = false [DONE] (could be checked internally by state or by styles of tip)
+
+=== onKeyDown
+== ArrowLeft []
+== ArrowDown []
+== ArrowRight []
+== ArrowUp []
+== PageDown []
+== PageUp []
+== Home []
+== End []
+
+=== onPointerOver []
+=== onPointerMove []
+=== onPointerOut []
+=== onPointerDown []
+=== OnPointerUp []
 */
+
+async function checkStatsTipActiveInactiveStyles(isActive: boolean) {
+  const type = isActive ? 'active' : 'inactive';
+
+  const VerticalLineSVG = GraphAndDatesPO.getVerticalLineSvg();
+  const CircleSpan = GraphAndDatesPO.getCircleSpan();
+  const StatsTipWrapper = GraphAndDatesPO.getStatsTipWrapper();
+
+  await waitFor(() => {
+    expect(VerticalLineSVG).toHaveStyle({
+      opacity: CurrentStatsTipPO.commonStyles.opacity[type],
+      pointerEvents: CurrentStatsTipPO.commonStyles.pointerEvents[type],
+    });
+  });
+
+  await waitFor(() => {
+    expect(CircleSpan).toHaveStyle({
+      opacity: CurrentStatsTipPO.commonStyles.opacity[type],
+      pointerEvents: CurrentStatsTipPO.commonStyles.pointerEvents[type],
+    });
+  });
+
+  await waitFor(() => {
+    expect(StatsTipWrapper).toHaveStyle({
+      opacity: CurrentStatsTipPO.commonStyles.opacity[type],
+      pointerEvents: CurrentStatsTipPO.commonStyles.pointerEvents[type],
+    });
+  });
+}
+
+describe('inferNewActiveStatsIndex function', () => {
+  const { statsWithCoords } = GraphAndDatesPO;
+  const { XStep } = GraphAndDatesPO.XYSteps;
+
+  it('statsWithCoords = undefined, so the function returns undefined', () => {
+    expect(inferNewActiveStatsIndex(undefined, 1, 1)).toBeUndefined();
+  });
+
+  it('XStep = undefined, so the function returns undefined', () => {
+    expect(inferNewActiveStatsIndex([], undefined, 1)).toBeUndefined();
+  });
+
+  it('x <= 0, so the function returns 0 ', () => {
+    expect(inferNewActiveStatsIndex([], 1, 0)).toBe(0);
+    expect(inferNewActiveStatsIndex([], 1, -10)).toBe(0);
+  });
+
+  it('x > lastStats.x, so the function returns index of lastStats', () => {
+    const lastStatsIndex = statsWithCoords.length - 1;
+    const lastStatsX = statsWithCoords[lastStatsIndex].x;
+
+    const testedX = lastStatsX + 1;
+
+    expect(inferNewActiveStatsIndex(statsWithCoords, XStep, testedX)).toBe(lastStatsIndex);
+  });
+
+  it.each([
+    [3, 0.4, 'add', 3],
+    [5, 0.6, 'add', 6],
+    [11, 0.3, 'sub', 11],
+    [13, 0.7, 'sub', 12],
+    [27, 0, 'sub', 27],
+  ])('Test different x values between stats', (index, multiplyCoef, operation, expectedIndex) => {
+    const additionalNum = XStep * multiplyCoef;
+    let testedX = statsWithCoords[index].x;
+
+    if (operation === 'add') {
+      testedX += additionalNum;
+    } else {
+      testedX -= additionalNum;
+    }
+
+    expect(inferNewActiveStatsIndex(statsWithCoords, XStep, testedX)).toBe(expectedIndex);
+  });
+});
 
 describe('GraphAndDates function', () => {
   describe('amount of date elems', () => {
@@ -23,92 +128,21 @@ describe('GraphAndDates function', () => {
     });
   });
 
-  // describe('with CurrentStatsTip function', () => {
-  //   it('ArrowUp keyboard event', () => {
-  //     const { formattedPaymentStats, width, height } = GraphAndDatesPO;
+  it('onFocus and onBlur on GraphAndDates', async () => {
+    GraphAndDatesPO.render();
 
-  //     let activeIndex = 0;
+    const GraphAndDates = GraphAndDatesPO.getGraphAndDates();
 
-  //     const currentTipXCoord = GraphAndDatesPO.calcXCoord(activeIndex);
-  //     const currentTipYCoord = GraphAndDatesPO
-  //       .calcYCoord(formattedPaymentStats[activeIndex].amount);
+    await checkStatsTipActiveInactiveStyles(false);
 
-  //     const tipConfig: TipConfig = {
-  //       ...formattedPaymentStats[activeIndex],
-  //       x: currentTipXCoord,
-  //       y: currentTipYCoord,
-  //       svgElWidth: width,
-  //       svgElHeight: height,
-  //     };
+    GraphAndDates.focus();
 
-  //     const TRIANGLE_LONG_SIDE = 12;
-  //     const TRIANGLE_SHORT_SIDE = 9;
-  //     const GAP_BETWEEN_TRIANGLE_AND_CIRCLE = 6;
-  //     const TIP_X_PADDING = 12;
-  //     const TRIANGLE_X_PADDING = 12;
-  //     const VERTICAL_LINE_WIDTH_PX = 2;
+    expect(GraphAndDates).toHaveFocus();
 
-  //     const TIP_WIDTH = 200;
-  //     const TIP_HEIGHT = 50;
-  //     const CIRCLE_WIDTH = 16;
-  //     const CIRCLE_HEIGHT = 16;
+    await checkStatsTipActiveInactiveStyles(true);
 
-  //     const tipMetrics: TipMetrics = {
-  //       tipWidth: TIP_WIDTH,
-  //       tipHeight: TIP_HEIGHT,
-  //       circleWidth: CIRCLE_WIDTH,
-  //       circleHeight: CIRCLE_HEIGHT,
-  //     };
+    GraphAndDates.blur();
 
-  //     const tipExpectedStyles = calcStyleParams(
-  //       tipMetrics,
-  //       tipConfig,
-  //       TIP_X_PADDING,
-  //       VERTICAL_LINE_WIDTH_PX,
-  //       TRIANGLE_SHORT_SIDE,
-  //       TRIANGLE_LONG_SIDE,
-  //       TRIANGLE_X_PADDING,
-  //       GAP_BETWEEN_TRIANGLE_AND_CIRCLE,
-  //     );
-
-  //     GraphAndDatesPO.render();
-
-  //     Object.defineProperty(GraphAndDatesPO.getSvgWrapper(), 'offsetHeight', {
-  //       value: height,
-  //       writable: true,
-  //     });
-
-  //     Object.defineProperty(CurrentStatsTipPO.getCurrentStatsTip(), 'offsetWidth', {
-  //       value: TIP_WIDTH,
-  //       writable: true,
-  //     });
-
-  //     Object.defineProperty(CurrentStatsTipPO.getCurrentStatsTip(), 'offsetHeight', {
-  //       value: TIP_HEIGHT,
-  //       writable: true,
-  //     });
-
-  //     Object.defineProperty(CurrentStatsTipPO.getCircleSpan(), 'offsetWidth', {
-  //       value: CIRCLE_WIDTH,
-  //       writable: true,
-  //     });
-
-  //     Object.defineProperty(CurrentStatsTipPO.getCircleSpan(), 'offsetHeight', {
-  //       value: CIRCLE_HEIGHT,
-  //       writable: true,
-  //     });
-
-  //     GraphAndDatesPO.rerender();
-
-  //     console.log(GraphAndDatesPO.getSvgWrapper().offsetHeight);
-
-  //     expect(CurrentStatsTipPO.getVerticalLineSvg()).toHaveStyle({
-  //       height: `${tipExpectedStyles.verticalLineHeight}px`,
-  //       top: `${tipExpectedStyles.verticalLineY}px`,
-  //       left: `${tipExpectedStyles.verticalLineX}px`,
-  //       opacity: '0',
-  //       pointerEvents: 'none',
-  //     });
-  //   });
-  // });
+    await checkStatsTipActiveInactiveStyles(false);
+  });
 });

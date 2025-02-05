@@ -31,7 +31,15 @@ export default function PaymentAndTransactionWrapper({ commonClassName }: Compon
     const width = paymentAndHistory.offsetWidth;
     const totalHeight = paymentAndHistory.offsetHeight;
 
-    const colGap = +getComputedStyle(paymentAndHistory).columnGap.match(/\d+/)![0];
+    let colGap: number;
+    const colGapStyle = getComputedStyle(paymentAndHistory).columnGap;
+
+    if (colGapStyle.match(/%/)) {
+      colGap = width * (+colGapStyle.match(/\d+(\.\d+)?/)![0] / 100);
+    } else {
+      colGap = +colGapStyle.match(/\d+/)![0];
+    }
+
     const rowGap = +getComputedStyle(paymentAndHistory).rowGap.match(/\d+/)![0];
 
     let oneRowHeight: number;

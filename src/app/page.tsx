@@ -5,10 +5,10 @@ import Dashboard from '@/ui/Dashboard/Dashboard';
 export default function DashboardPage() {
   return (
     <PageContainer>
-      <TopBar
+      {/* <TopBar
         title="Good morning, Chris"
         subtitle="Here&#39;s your dashboard overview."
-      />
+      /> */}
       <Dashboard />
     </PageContainer>
   );
