@@ -116,12 +116,14 @@ export default function PaymentHistory(
 
   const [activeDateRangeBtn, setActiveDateRangeBtn] = useState<ActiveDateRange>('1M');
 
+  const windowWidth = Number(wrapperMetrics?.windowWidth);
+
   const componentWidth = (() => {
     if (!wrapperMetrics) return;
 
     let width: number;
 
-    if (isFullScreenOn) {
+    if (wrapperMetrics.windowWidth < 1080 || isFullScreenOn) {
       width = wrapperMetrics.width;
     } else {
       width = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
@@ -131,6 +133,30 @@ export default function PaymentHistory(
   })();
 
   const graphAndDatesWidth = componentWidth ? componentWidth - BORDER_WIDTH_PX * 2 : null;
+
+  let topIndentPx: number;
+
+  if (windowWidth >= 1080) {
+    topIndentPx = 60;
+  } else if (windowWidth >= 600) {
+    topIndentPx = 40;
+  } else {
+    topIndentPx = 20;
+  }
+
+  let amountOfMiddleDates: number;
+
+  if (windowWidth >= 1080) {
+    amountOfMiddleDates = isFullScreenOn ? 6 : 4;
+  } else if (windowWidth >= 800) {
+    amountOfMiddleDates = 6;
+  } else if (windowWidth >= 600) {
+    amountOfMiddleDates = 4;
+  } else if (windowWidth >= 400) {
+    amountOfMiddleDates = 2;
+  } else {
+    amountOfMiddleDates = 1;
+  }
 
   const formattedAllPaymentStats = useMemo(() => {
     const last366DaysStatObjs = paymentStats.slice(366);
@@ -246,7 +272,7 @@ export default function PaymentHistory(
     }
   }
 
-  let mainDivClassName = `min-h-[500px] flex flex-col justify-start items-start gap-[10px]
+  let mainDivClassName = `max-h-[450px] min-[1080px]:max-h-[auto] min-[1080px]:min-h-[500px] flex flex-col justify-start items-start gap-[10px]
     border-[${BORDER_WIDTH_PX}px] border-solid border-grey-200 rounded-[16px]`;
   if (isFullScreenOn) mainDivClassName += ' col-[1_/_3]';
 
@@ -266,8 +292,10 @@ export default function PaymentHistory(
       onTransitionEnd={paymentComponentOnTransitionEnd}
       data-testid="paymentHistory"
     >
-      <div className="w-full flex flex-col justify-start items-start gap-[10px] p-[24px]">
-        <div className="w-full flex justify-between items-center">
+      <div className="w-full flex flex-col justify-start items-start gap-[10px] p-[18px] min-[500px]:p-[24px]">
+        <div className="w-full flex flex-col min-[500px]:flex-row min-[500px]:justify-between
+          min-[500px]:items-center gap-[10px] min-[500px]:gap-0 mb-[10px] min-[500px]:mb-0"
+        >
           <h2 className="font-tthoves font-medium text-[20px] text-darkBlue">
             Payment History
           </h2>
@@ -306,30 +334,32 @@ export default function PaymentHistory(
                 1Y
               </DateRangeButton>
             </div>
-            <button
-              type="button"
-              className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
-              onClick={fullScreenButtonOnClick}
-              aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on fullscreen'}
-              data-testid="fullScreenButton"
-            >
-              {isFullScreenOn ? (
-                <FullScreenOffIcon
-                  className="hover:scale-[0.8] transition-standart"
-                  data-testid="fullScreenBtnIcon"
-                />
-              )
-                : (
-                  <FullScreenOnIcon
-                    className="hover:scale-[1.2] transition-standart"
+            {windowWidth >= 1080 && (
+              <button
+                type="button"
+                className="w-[25px] h-[25px] fill-grey-500 hover:fill-blue-hover active:fill-blue-active"
+                onClick={fullScreenButtonOnClick}
+                aria-label={isFullScreenOn ? 'Close fullscreen payment history chart' : 'Show payment history chart on fullscreen'}
+                data-testid="fullScreenButton"
+              >
+                {isFullScreenOn ? (
+                  <FullScreenOffIcon
+                    className="hover:scale-[0.8] transition-standart"
                     data-testid="fullScreenBtnIcon"
                   />
-                )}
-            </button>
+                )
+                  : (
+                    <FullScreenOnIcon
+                      className="hover:scale-[1.2] transition-standart"
+                      data-testid="fullScreenBtnIcon"
+                    />
+                  )}
+              </button>
+            )}
           </div>
         </div>
         <div
-          className="flex flex-col justify-start items-start gap-[10px]"
+          className="flex flex-row min-[500px]:flex-col justify-start items-center min-[500px]:items-start gap-[10px] flex-wrap"
           aria-live="polite"
           aria-atomic="true"
           aria-busy={!formattedAllPaymentStats}
@@ -337,11 +367,11 @@ export default function PaymentHistory(
           data-testid="currentPeriodInfoBlock"
         >
           <p
-            className="font-tthoves font-medium text-[42px] text-darkBlue"
+            className="font-tthoves font-medium text-[38px] min-[500px]:text-[42px] text-darkBlue mr-[10px]  min-[500px]:mr-0"
             data-testid="totalAmountParagraph"
           >
             {currentPeriodTotalAmount.integer}
-            <span className="text-[32px] text-grey-400">
+            <span className="text-[28px] min-[500px]:text-[32px] text-grey-400">
               {currentPeriodTotalAmount.float}
             </span>
           </p>
@@ -363,8 +393,9 @@ export default function PaymentHistory(
       </div>
       <GraphAndDates
         paymentStats={currentPeriodFormattedPaymentStats}
-        isFullScreenOn={isFullScreenOn}
         widthProp={graphAndDatesWidth}
+        topIndentPx={topIndentPx}
+        amountOfMiddleDates={amountOfMiddleDates}
       />
     </div>
   );

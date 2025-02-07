@@ -39,6 +39,11 @@ FUNCTIONALITY DESCRIPTION / CHECKLIST
 === calcComparePercent [DONE]
 */
 
+// NEEEEEEEEEEEEW
+// reset fullscreen on media crossing
+// topIndentPX
+// amount of middle dates
+
 function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[] {
   return numsArr.map<FormattedPaymentStats>((num) => ({
     amount: num,

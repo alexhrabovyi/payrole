@@ -404,13 +404,11 @@ export function createGraphElems(
 
 export function createDateElems(
   statsWithCoords: StatsWithCoords[] | undefined,
-  isFullScreenOn: boolean,
   svgWidth: number | undefined,
   offsetX: number,
+  amountOfMiddleDates: number,
 ) {
   if (!statsWithCoords || !svgWidth) return;
-
-  const amountOfMiddleDates = isFullScreenOn ? 6 : 4;
 
   const startX = offsetX;
   const endX = svgWidth - offsetX;

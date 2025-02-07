@@ -7,21 +7,26 @@ import PaymentHistory from '../PaymentHistory/PaymentHistory';
 import TransactionHistory from '../TransactionHistory/TransactionHistory';
 
 export interface PaymentAndTransactionMetrics {
+  windowWidth: number,
   width: number,
   height: number,
   colGap: number,
   rowGap: number,
 }
 
-interface ComponentProps {
-  commonClassName: string,
-}
-
-export default function PaymentAndTransactionWrapper({ commonClassName }: ComponentProps) {
+export default function PaymentAndTransactionWrapper() {
   const paymentAndHistoryRef = useRef<HTMLDivElement | null>(null);
 
+  const [windowWidth, setWindowWidth] = useState(0);
   const [isPaymentFullScreenOn, setIsPaymentFullScreenOn] = useState(false);
   const [wrapperMetrics, setWrapperMetrics] = useState<PaymentAndTransactionMetrics | null>(null);
+
+  const inferWindowWidth = useCallback(() => {
+    setWindowWidth(window.innerWidth);
+  }, []);
+
+  useLayoutEffect(inferWindowWidth, [inferWindowWidth]);
+  useOnResize(inferWindowWidth);
 
   const inferWrapperMetrics = useCallback(() => {
     const paymentAndHistory = paymentAndHistoryRef.current;
@@ -51,19 +56,30 @@ export default function PaymentAndTransactionWrapper({ commonClassName }: Compon
     }
 
     setWrapperMetrics({
+      windowWidth,
       width,
       height: oneRowHeight,
       colGap,
       rowGap,
     });
-  }, [isPaymentFullScreenOn]);
+  }, [isPaymentFullScreenOn, windowWidth]);
 
   useLayoutEffect(inferWrapperMetrics, [inferWrapperMetrics]);
-  useOnResize(inferWrapperMetrics);
 
-  let className = `relative col-[1_/_3] ${commonClassName}`;
+  function resetFullscreenOnMediaCrossing() {
+    if (isPaymentFullScreenOn && windowWidth < 1080) setIsPaymentFullScreenOn(false);
+  }
 
-  if (isPaymentFullScreenOn) className += ' grid-rows-[1fr_1fr]';
+  resetFullscreenOnMediaCrossing();
+
+  let className = `w-full relative col-[1_/_3] grid grid-cols-[1fr] min-[1080px]:grid-cols-[1fr_1fr]
+    gap-x-[2.56%] 2xl:gap-x-[32px] gap-y-[28px] min-[500px]:gap-y-[34px]`;
+
+  if (isPaymentFullScreenOn) {
+    className += ' grid-rows-[1fr_1fr]';
+  } else if (Number(wrapperMetrics?.windowWidth) < 1080) {
+    className += ' grid-rows-[auto_auto]';
+  }
 
   return (
     <div

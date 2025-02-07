@@ -12,26 +12,24 @@ interface TransactionHistoryProps {
   readonly wrapperMetrics: PaymentAndTransactionMetrics | null;
 }
 
-const TransactionHistory: React.FC<TransactionHistoryProps> = (
-  { isPaymentFullScreenOn, wrapperMetrics },
-) => {
+export default function TransactionHistory(
+  { isPaymentFullScreenOn, wrapperMetrics }: TransactionHistoryProps,
+) {
   const transactionComponentRef = useRef<HTMLDivElement | null>(null);
 
   const [prevIsFullScreenOn, setPrevIsFullScreenOn] = useState(isPaymentFullScreenOn);
 
   let position: 'absolute' | 'relative';
   let width: string;
-  let height: string;
   let topPos: string;
   let leftPos: string;
 
-  if (wrapperMetrics) {
+  if (wrapperMetrics && wrapperMetrics.windowWidth >= 1080) {
     const componentWidth = (wrapperMetrics.width - wrapperMetrics.colGap) / 2;
     const componentHeight = wrapperMetrics.height;
 
     position = 'absolute';
     width = `${componentWidth}px`;
-    height = `${componentHeight}px`;
 
     if (isPaymentFullScreenOn) {
       topPos = `${componentHeight + wrapperMetrics.rowGap}px`;
@@ -43,7 +41,6 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
   } else {
     position = 'relative';
     width = '100%';
-    height = '100%';
     topPos = '0px';
     leftPos = '0px';
   }
@@ -67,17 +64,18 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
   return (
     <div
       ref={transactionComponentRef}
-      className=""
+      className="flex justify-center items-start"
       style={{
         position,
         width,
-        height,
         top: topPos,
         left: leftPos,
       }}
       onTransitionEnd={transactionComponentOnTransitionEnd}
     >
-      <div className="w-full h-full p-[24px] flex flex-col justify-start items-stretch gap-[24px] border-grey bg-white">
+      <div className={`max-w-[500px] min-[1080px]:max-w-[100%] w-full h-full p-[18px] min-[500px]:p-[24px] 
+        flex flex-col justify-start items-stretch gap-[24px] border-grey bg-white`}
+      >
         <div className="flex justify-between items-center">
           <h3 className="font-tthoves font-medium text-[20px] text-darkBlue">
             Transaction History
@@ -92,193 +90,193 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
           </Link>
         </div>
         <div className="flex flex-col justify-start items-stretch gap-[20px]">
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex justify-start items-center gap-[20px]">
-            <div className="w-[48px] h-[48px] rounded-[50%] flex justify-center items-center
-          overflow-hidden bg-lightBlue-96"
+          <div className="flex justify-start items-center gap-[15px] min-[500px]:gap-[20px]">
+            <div className="w-[40px] min-[500px]:w-[48px] h-[40px] min-[500px]:h-[48px] rounded-[50%]
+              flex justify-center items-center overflow-hidden bg-lightBlue-96 shrink-0"
             >
               <Image
-                className="w-[40px] h-[40px]"
+                className="w-[36px] min-[500px]:w-[40px] h-[36px] min-[500px]:h-[40px]"
                 src={avatarSrc}
                 alt="User Avatar"
               />
             </div>
-            <div className="w-full flex justify-between items-center">
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves text-[16px] font-medium text-darkBlue">
+            <div className="w-full flex justify-between items-center gap-[20px]">
+              <div className="flex flex-col justify-start items-start gap-[4px] flex-grow-0">
+                <p className="font-tthoves text-[16px] font-medium text-darkBlue [word-break:break-word]">
                   Cody Fisher
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   Louis Vuitton
                 </p>
               </div>
-              <div className="flex flex-col justify-start items-start gap-[4px]">
-                <p className="font-tthoves font-medium text-[16px] text-darkBlue">
+              <div className="flex flex-col justify-start items-start gap-[4px] shrink-0">
+                <p className="font-tthoves font-medium text-[16px] text-darkBlue [word-break:break-word]">
                   $1,546
-                  <span className="font-tthoves font-medium text-[14px] text-grey-400">
+                  <span className="font-tthoves font-medium text-[14px] text-grey-400 [word-break:break-word]">
                     .12
                   </span>
                 </p>
-                <p className="font-tthoves text-[14px] text-grey-500">
+                <p className="font-tthoves text-[14px] text-grey-500 [word-break:break-word]">
                   1 Jun 2022
                 </p>
               </div>
@@ -288,6 +286,4 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = (
       </div>
     </div>
   );
-};
-
-export default TransactionHistory;
+}

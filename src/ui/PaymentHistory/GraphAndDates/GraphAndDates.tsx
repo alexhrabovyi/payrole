@@ -70,16 +70,16 @@ export function inferNewActiveStatsIndex(
 
 interface GraphAndDatesProps {
   readonly paymentStats: FormattedPaymentStats[];
-  readonly isFullScreenOn: boolean,
-  readonly widthProp: number | null;
+  readonly widthProp: number | null,
+  readonly topIndentPx: number,
+  readonly amountOfMiddleDates: number,
 }
 
 export default function GraphAndDates({
-  paymentStats, isFullScreenOn, widthProp,
+  paymentStats, widthProp, topIndentPx, amountOfMiddleDates,
 }: GraphAndDatesProps) {
   const STATS_TIP_ID = 'statsTip';
 
-  const TOP_INDENT_PX = 60;
   const BOTTOM_INDENT_PERCENT = 0.1;
   const DATES_OFFSET_X_PX = 50;
 
@@ -134,8 +134,8 @@ export default function GraphAndDates({
 
   const minMaxAmount = useMemo(() => calcMinMaxAmount(paymentStats), [paymentStats]);
   const minMaxCoords = useMemo(
-    () => calcMinMaxCoords(TOP_INDENT_PX, BOTTOM_INDENT_PERCENT, svgMetrics),
-    [svgMetrics],
+    () => calcMinMaxCoords(topIndentPx, BOTTOM_INDENT_PERCENT, svgMetrics),
+    [svgMetrics, topIndentPx],
   );
 
   const XYSteps = useMemo(
@@ -164,10 +164,10 @@ export default function GraphAndDates({
 
   const dateElems = useMemo(() => createDateElems(
     statsWithCoords,
-    isFullScreenOn,
     svgMetrics?.width,
     DATES_OFFSET_X_PX,
-  ), [isFullScreenOn, statsWithCoords, svgMetrics?.width]);
+    amountOfMiddleDates,
+  ), [statsWithCoords, svgMetrics?.width, amountOfMiddleDates]);
 
   const tipConfig = useMemo(() => {
     if (!statsWithCoords || !svgMetrics) return;
@@ -373,7 +373,8 @@ export default function GraphAndDates({
         </svg>
       </div>
       <div
-        className="relative w-full px-[24px] pb-[24px] flex justify-between items-center font-tthoves text-[14px] text-grey-400"
+        className={`relative w-full px-[18px] min-[500px]:px-[24px] pb-[24px] 
+          flex justify-between items-center font-tthoves text-[14px] text-grey-400`}
         data-testid="dateElemsBlock"
       >
         {dateElems}
