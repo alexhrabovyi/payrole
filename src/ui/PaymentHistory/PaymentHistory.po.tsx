@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 import DateRangeButtonPO from './DateRangeButton/DateRangeButton.po';
+import GraphAndDatesPO from './GraphAndDates/GraphAndDates.po';
 import { PaymentAndTransactionMetrics } from '../PaymentAndTransactionWrapper/PaymentAndTransactionWrapper';
 import PaymentHistory from './PaymentHistory';
 
@@ -52,7 +53,8 @@ const PaymentHistoryPO = {
   },
 
   render(
-    initFullScreenOn: boolean = false,
+    initFullScreenOn = false,
+    windowWidth = 1500,
   ) {
     const { fullScreenWidth, notFullScreenWidth } = this;
 
@@ -60,6 +62,7 @@ const PaymentHistoryPO = {
       const [isFullScreenOn, setIsFullScreenOn] = useState(initFullScreenOn);
 
       const wrapperMetrics: PaymentAndTransactionMetrics = {
+        windowWidth,
         width: fullScreenWidth,
         height: 500,
         colGap: fullScreenWidth - (notFullScreenWidth * 2),
@@ -116,6 +119,10 @@ const PaymentHistoryPO = {
 
   getCurrentPeriodInfoBlock() {
     return screen.getByTestId('currentPeriodInfoBlock');
+  },
+
+  getDateElemsBlock() {
+    return GraphAndDatesPO.getDateElemsBlock();
   },
 };
 

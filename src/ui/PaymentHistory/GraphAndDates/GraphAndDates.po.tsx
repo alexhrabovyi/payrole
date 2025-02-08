@@ -48,14 +48,15 @@ const GraphAndDatesPO = {
     ) as StatsWithCoords[];
   },
 
-  render(isFullScreenOn: boolean = false) {
+  render() {
     const { width, formattedPaymentStats } = this;
 
     render(
       <GraphAndDates
-        isFullScreenOn={isFullScreenOn}
         paymentStats={formattedPaymentStats}
         widthProp={width}
+        topIndentPx={60}
+        amountOfMiddleDates={4}
       />,
     );
   },

@@ -3,7 +3,6 @@ import PaymentAndTransactionWrapper from '../PaymentAndTransactionWrapper/Paymen
 
 export default function Dashboard() {
   return (
-    // CHECK MAIN CLASSES, MAYBE THERE IS SOMETHING THAT I SHOULD DELETE
     <main className="w-full grid grid-cols-[1fr_1fr] gap-x-[2.56%] 2xl:gap-x-[32px] gap-y-[28px] min-[500px]:gap-y-[34px]">
       <div className="col-[1/3] w-full grid grid-cols-[1fr] min-[1080px]:grid-cols-[1fr_1fr]
         gap-x-[2.56%] 2xl:gap-x-[32px] gap-y-[28px] min-[550px]:gap-y-[0px] min-[1080px]:gap-y-[34px] justify-items-center"

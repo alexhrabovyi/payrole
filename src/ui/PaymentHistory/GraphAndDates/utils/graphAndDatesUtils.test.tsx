@@ -93,7 +93,6 @@ function createGraphElemsTestFabric(testName: string, nums: number[], result: Re
 function createDateElemsTestFabric(
   testName: string,
   xCoords: number[],
-  isFullScreenOn: boolean,
   result: ReactNode[],
 ) {
   const OFFSET_X = 10;
@@ -114,9 +113,9 @@ function createDateElemsTestFabric(
   it(testName, () => {
     expect(createDateElems(
       statsWithCoords,
-      isFullScreenOn,
       svgWidth,
       OFFSET_X,
+      4,
     )).toEqual(result);
   });
 }
@@ -1257,120 +1256,13 @@ describe('GraphAndDates utility functions', () => {
     ];
 
     createDateElemsTestFabric(
-      'from 0 to 77.43 with step 2.581, 31 nums, fullScreen = false',
+      'from 0 to 77.43 with step 2.581, 31 nums',
       xCoords1,
-      false,
       result1,
     );
 
-    const result2 = [
-      <p
-        key="10.324"
-        style={
-          {
-            left: '10.324px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="18.067"
-        style={
-          {
-            left: '18.067px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="25.81"
-        style={
-          {
-            left: '25.81px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="33.553"
-        style={
-          {
-            left: '33.553px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="43.877"
-        style={
-          {
-            left: '43.877px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="51.62"
-        style={
-          {
-            left: '51.62px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="59.363"
-        style={
-          {
-            left: '59.363px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="67.106"
-        style={
-          {
-            left: '67.106px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-    ];
-
-    createDateElemsTestFabric(
-      'from 0 to 77.43 with step 2.581, 31 nums, fullScreen = true',
-      xCoords1,
-      true,
-      result2,
-    );
-
     const xCoords2 = xCoordsGenerator(93, 4.817);
-    const result3 = [
+    const result2 = [
       <p
         key="9.634"
         style={
@@ -1446,120 +1338,13 @@ describe('GraphAndDates utility functions', () => {
     ];
 
     createDateElemsTestFabric(
-      'from 0 to 443.164 with step 4.817, 93 nums, fullScreen = false',
+      'from 0 to 443.164 with step 4.817, 93 nums',
       xCoords2,
-      false,
-      result3,
-    );
-
-    const result4 = [
-      <p
-        key="9.634"
-        style={
-          {
-            left: '9.634px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="72.255"
-        style={
-          {
-            left: '72.255px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="130.059"
-        style={
-          {
-            left: '130.059px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="192.68"
-        style={
-          {
-            left: '192.68px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="250.484"
-        style={
-          {
-            left: '250.484px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="313.105"
-        style={
-          {
-            left: '313.105px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="370.909"
-        style={
-          {
-            left: '370.909px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="433.53000000000003"
-        style={
-          {
-            left: '433.53000000000003px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-    ];
-
-    createDateElemsTestFabric(
-      'from 0 to 443.164 with step 4.817, 93 nums, fullScreen = true',
-      xCoords2,
-      true,
-      result4,
+      result2,
     );
 
     const xCoords3 = xCoordsGenerator(186, 7.511);
-    const result5 = [
+    const result3 = [
       <p
         key="7.511"
         style={
@@ -1635,120 +1420,14 @@ describe('GraphAndDates utility functions', () => {
     ];
 
     createDateElemsTestFabric(
-      'from 0 to 1389.535 with step 7.511, 186 nums, fullScreen = false',
+      'from 0 to 1389.535 with step 7.511, 186 nums',
       xCoords3,
-      false,
-      result5,
-    );
-
-    const result6 = [
-      <p
-        key="7.511"
-        style={
-          {
-            left: '7.511px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="202.797"
-        style={
-          {
-            left: '202.797px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="398.083"
-        style={
-          {
-            left: '398.083px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="593.369"
-        style={
-          {
-            left: '593.369px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="796.166"
-        style={
-          {
-            left: '796.166px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="991.452"
-        style={
-          {
-            left: '991.452px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="1186.738"
-        style={
-          {
-            left: '1186.738px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="1382.0240000000001"
-        style={
-          {
-            left: '1382.0240000000001px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-    ];
-
-    createDateElemsTestFabric(
-      'from 0 to 1389.535 with step 7.511, 186 nums, fullScreen = true',
-      xCoords3,
-      true,
-      result6,
+      result3,
     );
 
     const xCoords4 = xCoordsGenerator(372, 3.512);
-    const result7 = [
+
+    const result4 = [
       <p
         key="10.536"
         style={
@@ -1824,116 +1503,9 @@ describe('GraphAndDates utility functions', () => {
     ];
 
     createDateElemsTestFabric(
-      'from 0 to 1302.952 with step 3.512, 372 nums, fullScreen = false',
+      'from 0 to 1302.952 with step 3.512, 372 nums',
       xCoords4,
-      false,
-      result7,
-    );
-
-    const result8 = [
-      <p
-        key="10.536"
-        style={
-          {
-            left: '10.536px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="193.16"
-        style={
-          {
-            left: '193.16px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="375.784"
-        style={
-          {
-            left: '375.784px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="558.408"
-        style={
-          {
-            left: '558.408px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="744.544"
-        style={
-          {
-            left: '744.544px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="927.168"
-        style={
-          {
-            left: '927.168px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="1109.792"
-        style={
-          {
-            left: '1109.792px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-      <p
-        key="1292.416"
-        style={
-          {
-            left: '1292.416px',
-            position: 'absolute',
-            transform: 'translateX(-50%)',
-          }
-        }
-      >
-        January 1
-      </p>,
-    ];
-
-    createDateElemsTestFabric(
-      'from 0 to 1302.952 with step 3.512, 372 nums, fullScreen = true',
-      xCoords4,
-      true,
-      result8,
+      result4,
     );
   });
 });

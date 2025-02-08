@@ -11,18 +11,22 @@ interface TopBarProps {
 
 export default function TopBar({ title, subtitle }: TopBarProps) {
   return (
-    <div className="w-full py-[32px] flex justify-between items-center">
-      <div className="flex flex-col justify-start items-start gap-[4px]">
-        <h1 className="font-tthoves text-[32px] font-semibold text-darkBlue">
+    <div className="w-full py-[20px] min-[500px]:py-[24px] min-[700px]:py-[28px] min-[900px]:py-[32px] flex flex-col-reverse min-[900px]:flex-row justify-start min-[900px]:justify-between
+      items-start min-[900px]:items-center gap-[20px] min-[900px]:gap-[5%]"
+    >
+      <div className="w-full max-w-[580px] min-[900px]:w-auto min-[900px]:max-w-[auto] flex flex-col justify-start items-start gap-[4px]">
+        <h1 className="font-tthoves text-[28px] min-[600px]:text-[32px] font-semibold text-darkBlue">
           {title}
         </h1>
         <p className="font-tthoves text-[16px] text-grey-600">
           {subtitle}
         </p>
       </div>
-      <div className="flex justify-start items-center gap-[20px]">
+      <div className="w-full min-[900px]:w-auto flex flex-col-reverse min-[450px]:flex-row
+        justify-start min-[450px]:justify-between min-[900px]:justify-start items-start min-[450px]:items-center gap-[20px] shrink-0"
+      >
         <Button
-          classNames="group"
+          classNames="group p-[8px_10px] min-[450px]:p-[12px_14px] min-[600px]:p-[12px_20px]"
         >
           Create A Contract
           <PlusIcon

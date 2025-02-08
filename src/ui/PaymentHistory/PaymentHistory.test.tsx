@@ -1,4 +1,5 @@
 /* eslint-disable indent */
+/* eslint-disable testing-library/no-node-access */
 import { waitFor } from '@testing-library/react';
 import {
   calcAndFormatCurrentPeriodTotalAmount,
@@ -31,6 +32,8 @@ FUNCTIONALITY DESCRIPTION / CHECKLIST
 = aria-label [DONE]
 = classes (and icon itself) of icon [DONE]
 = toggling [DONE]
+= amount of dates [DONE]
+= topIndentPX []
 
 === divideDate [DONE]
 
@@ -38,11 +41,6 @@ FUNCTIONALITY DESCRIPTION / CHECKLIST
 
 === calcComparePercent [DONE]
 */
-
-// NEEEEEEEEEEEEW
-// reset fullscreen on media crossing
-// topIndentPX
-// amount of middle dates
 
 function createFormattedPaymentStats(numsArr: number[]): FormattedPaymentStats[] {
   return numsArr.map<FormattedPaymentStats>((num) => ({
@@ -309,5 +307,49 @@ describe('PaymentHistory function', () => {
     testRangeBtnsFabric('from 1M to 6M to 1M', ['6M', '1M']);
     testRangeBtnsFabric('from 1M to 1Y to 1M', ['1Y', '1M']);
     testRangeBtnsFabric('from 1M to 3M to 6M to 1Y to 1M', ['3M', '6M', '1Y', '1M']);
+  });
+
+  describe('amount of dates', () => {
+    it.each([
+      {
+        windowWidth: 1080,
+        isFullScreenOn: false,
+        expectedAmountOfDates: 6,
+      },
+      {
+        windowWidth: 1080,
+        isFullScreenOn: true,
+        expectedAmountOfDates: 8,
+      },
+      {
+        windowWidth: 900,
+        isFullScreenOn: false,
+        expectedAmountOfDates: 8,
+      },
+      {
+        windowWidth: 700,
+        isFullScreenOn: false,
+        expectedAmountOfDates: 6,
+      },
+      {
+        windowWidth: 500,
+        isFullScreenOn: false,
+        expectedAmountOfDates: 4,
+      },
+      {
+        windowWidth: 350,
+        isFullScreenOn: false,
+        expectedAmountOfDates: 3,
+      },
+    ])(
+      'windowWidth = $windowWidth, isFullScreenOn = $isFullScreenOn, should be $expectedAmountOfDates dates',
+      ({ windowWidth, isFullScreenOn, expectedAmountOfDates }) => {
+        PaymentHistoryPO.render(isFullScreenOn, windowWidth);
+
+        const dateElBlock = PaymentHistoryPO.getDateElemsBlock();
+
+        expect(dateElBlock.children.length).toBe(expectedAmountOfDates);
+      },
+    );
   });
 });

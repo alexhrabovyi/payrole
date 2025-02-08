@@ -114,20 +114,6 @@ describe('inferNewActiveStatsIndex function', () => {
 });
 
 describe('GraphAndDates function', () => {
-  describe('amount of date elems', () => {
-    it('fullScreenOn = false', () => {
-      GraphAndDatesPO.render();
-
-      expect(GraphAndDatesPO.getDateElemsBlock().children.length).toBe(6);
-    });
-
-    it('fullScreenOn = true', () => {
-      GraphAndDatesPO.render(true);
-
-      expect(GraphAndDatesPO.getDateElemsBlock().children.length).toBe(8);
-    });
-  });
-
   it('onFocus and onBlur on GraphAndDates', async () => {
     GraphAndDatesPO.render();
 
