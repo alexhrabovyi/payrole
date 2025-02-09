@@ -20,13 +20,13 @@ export default function DashboardStats({ type, isTop }: StatsProps) {
     FirstIcon = CollectedIcon;
     SecondIcon = PaidIcon;
 
-    firstTitle = 'Collected';
-    secondTitle = 'Paid';
+    firstTitle = 'Collected (last 31 days)';
+    secondTitle = 'Paid (last 31 days)';
   } else {
     FirstIcon = PendingIcon;
     SecondIcon = PendingSumIcon;
 
-    firstTitle = 'Pending';
+    firstTitle = 'Pending Payments';
     secondTitle = 'Pending Sum';
   }
 
