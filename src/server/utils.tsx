@@ -1,7 +1,5 @@
 import transactionClastersMock from './transactionClasters.mock.json';
 
-export const ACCOUNT_ID = 'mX7orvBJQQNZA80q4CFLI';
-
 export interface PaymentStats {
   date: string,
   amount: string,
@@ -30,9 +28,30 @@ export interface Contact {
   defaultDescription?: string,
 }
 
-const transactionClasters = transactionClastersMock as Omit<Transaction, 'timestamp'>[][];
+export interface CollectedPaidAndPending {
+  collected: number,
+  paid: number,
+  amount: number,
+  sum: number,
+}
 
-function addTimeStamps(clasters: Omit<Transaction, 'timestamp'>[][]) {
+export const ACCOUNT_ID = 'mX7orvBJQQNZA80q4CFLI';
+
+// async function fakeNetwork() {
+//   return new Promise((res) => {
+//     setTimeout(res, Math.random() * 800);
+//   });
+// }
+
+async function fakeNetwork() {
+  return new Promise((res) => {
+    setTimeout(res, 1000);
+  });
+}
+
+const transactionClasters = transactionClastersMock as Transaction[][];
+
+function addDate(clasters: Transaction[][]) {
   const currentDateObj = new Date();
   const currentYear = currentDateObj.getFullYear();
   const currentMonth = currentDateObj.getMonth();
@@ -41,10 +60,7 @@ function addTimeStamps(clasters: Omit<Transaction, 'timestamp'>[][]) {
   const transactionsWithDates: Transaction[] = [];
 
   for (let i = 0; i < clasters.length; i += 1) {
-    const millisecondsInDay = 24 * 3600 * 1000;
     const currentClaster = clasters[i];
-    const clasterLength = currentClaster.length;
-    const millisecondsGap = millisecondsInDay / clasterLength;
 
     const transactionDate = new Date(
       currentYear,
@@ -58,24 +74,10 @@ function addTimeStamps(clasters: Omit<Transaction, 'timestamp'>[][]) {
 
     const dateStr = `${transactionYear}-${transactionMonth + 1}-${transactionDay}`;
 
-    for (let k = 0; k < clasterLength; k += 1) {
+    for (let k = 0; k < currentClaster.length; k += 1) {
       const currentTransactionWithoutDate = currentClaster[k];
-      const additionalMilliseconds = +(k * millisecondsGap
-        + Math.random() * ((k + 1) * millisecondsGap - k * millisecondsGap)).toFixed(0);
 
-      const currentTransactionDateObj = new Date(
-        transactionDate.getTime() + additionalMilliseconds,
-      );
-
-      const currentHours = currentTransactionDateObj.getHours();
-      const currentMinutes = currentTransactionDateObj.getMinutes();
-      const currentSeconds = currentTransactionDateObj.getSeconds();
-
-      const currentHoursStr = currentHours < 10 ? `0${currentHours}` : String(currentHours);
-      const currentMinutesStr = currentMinutes < 10 ? `0${currentMinutes}` : String(currentMinutes);
-      const currentSecondsStr = currentSeconds < 10 ? `0${currentSeconds}` : String(currentSeconds);
-
-      const timeStampStr = `${dateStr}T${currentHoursStr}:${currentMinutesStr}:${currentSecondsStr}`;
+      const timeStampStr = `${dateStr}${currentTransactionWithoutDate.timestamp}`;
 
       const transaction: Transaction = {
         ...currentTransactionWithoutDate,
@@ -88,6 +90,8 @@ function addTimeStamps(clasters: Omit<Transaction, 'timestamp'>[][]) {
 
   return transactionsWithDates;
 }
+
+const transactionsWithTimestamp = addDate(transactionClasters);
 
 function calcCollectedAndPaidForLastMonth() {
   const lastMonthClasters = transactionClasters.slice(transactionClasters.length - 31);
@@ -119,7 +123,35 @@ function calcCollectedAndPaidForLastMonth() {
   };
 }
 
-const transactionsWithTimestamp = addTimeStamps(transactionClasters);
+function calcPending(transactions: Transaction[]) {
+  const pendingTransactions = transactions.filter((t) => {
+    if (t.status === 'pending' && (t.type === 'payment' || (t.type === 'transfer' && t.amount < 0))) {
+      return true;
+    }
 
-console.log(transactionsWithTimestamp);
-console.log(calcCollectedAndPaidForLastMonth());
+    return false;
+  });
+
+  const sum = pendingTransactions.reduce((acc, t) => acc + Math.abs(t.amount), 0);
+  const amount = pendingTransactions.length;
+
+  return {
+    amount,
+    sum,
+  };
+}
+
+export async function getCollectedPaidAndPending() {
+  await fakeNetwork();
+
+  const collectedAndPaid = calcCollectedAndPaidForLastMonth();
+  const pending = calcPending(transactionsWithTimestamp);
+
+  return new Response(JSON.stringify({
+    ...collectedAndPaid,
+    ...pending,
+  }), {
+    status: 200,
+    statusText: 'OK',
+  });
+}

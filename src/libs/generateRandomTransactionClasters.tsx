@@ -322,3 +322,54 @@ export default function createMock() {
 
   return transactionsWithoutDatesClaster;
 }
+
+export function addTimeStamps(clasters: Omit<Transaction, 'timestamp'>[][]) {
+  const currentDateObj = new Date();
+  const currentYear = currentDateObj.getFullYear();
+  const currentMonth = currentDateObj.getMonth();
+  const currentDay = currentDateObj.getDate();
+
+  const midnightCurrentDay = new Date(currentYear, currentMonth, currentDay);
+
+  const clastersWithDates: Transaction[][] = [];
+
+  for (let i = 0; i < clasters.length; i += 1) {
+    const millisecondsInDay = 24 * 3600 * 1000;
+    const currentClaster = clasters[i];
+    const clasterLength = currentClaster.length;
+    const millisecondsGap = millisecondsInDay / clasterLength;
+
+    const claster: Transaction[] = [];
+
+    for (let k = 0; k < clasterLength; k += 1) {
+      const currentTransactionWithoutDate = currentClaster[k];
+      const additionalMilliseconds = +(k * millisecondsGap
+        + Math.random() * millisecondsGap).toFixed(0);
+
+      const currentTransactionDateObj = new Date(
+        midnightCurrentDay.getTime() + additionalMilliseconds,
+      );
+
+      const currentHours = currentTransactionDateObj.getHours();
+      const currentMinutes = currentTransactionDateObj.getMinutes();
+      const currentSeconds = currentTransactionDateObj.getSeconds();
+
+      const currentHoursStr = currentHours < 10 ? `0${currentHours}` : String(currentHours);
+      const currentMinutesStr = currentMinutes < 10 ? `0${currentMinutes}` : String(currentMinutes);
+      const currentSecondsStr = currentSeconds < 10 ? `0${currentSeconds}` : String(currentSeconds);
+
+      const timeStampStr = `T${currentHoursStr}:${currentMinutesStr}:${currentSecondsStr}`;
+
+      const transaction: Transaction = {
+        ...currentTransactionWithoutDate,
+        timestamp: timeStampStr,
+      };
+
+      claster.push(transaction);
+    }
+
+    clastersWithDates.push(claster);
+  }
+
+  return clastersWithDates;
+}

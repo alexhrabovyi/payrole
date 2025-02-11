@@ -1,4 +1,12 @@
-import { FC, SVGProps } from 'react';
+'use client';
+
+import { FC, SVGProps, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { UnknownAction } from '@reduxjs/toolkit';
+import { queryAPI, useGetCollectedPaidAndPendingQuery } from '@/store/queryAPI';
+import { CollectedPaidAndPending } from '@/server/utils';
+import formatAmount from '@/libs/formatAmount/formatAmount';
+
 import CollectedIcon from './imgs/collected.svg';
 import PaidIcon from './imgs/paid.svg';
 import PendingIcon from './imgs/pending.svg';
@@ -7,9 +15,33 @@ import PendingSumIcon from './imgs/pending_sum.svg';
 interface StatsProps {
   readonly type: 'total' | 'pending',
   readonly isTop: boolean,
+  readonly initialCollectedPaidAndPending: CollectedPaidAndPending,
 }
 
-export default function DashboardStats({ type, isTop }: StatsProps) {
+export default function DashboardStats({
+  type,
+  isTop,
+  initialCollectedPaidAndPending,
+}: StatsProps) {
+  const dispatch = useDispatch();
+  const { data } = useGetCollectedPaidAndPendingQuery(undefined, {
+    skip: !!initialCollectedPaidAndPending,
+  });
+
+  useEffect(() => {
+    if (initialCollectedPaidAndPending) {
+      dispatch(
+        queryAPI.util.upsertQueryData(
+          'getCollectedPaidAndPending' as const,
+          undefined,
+          initialCollectedPaidAndPending,
+        ) as any as UnknownAction,
+      );
+    }
+  }, [initialCollectedPaidAndPending, dispatch]);
+
+  const collectedPaidAndPending = data || initialCollectedPaidAndPending;
+
   let FirstIcon: FC<SVGProps<SVGElement>>;
   let SecondIcon: FC<SVGProps<SVGElement>>;
 
@@ -28,6 +60,54 @@ export default function DashboardStats({ type, isTop }: StatsProps) {
 
     firstTitle = 'Pending Payments';
     secondTitle = 'Pending Sum';
+  }
+
+  let firstBlock: React.ReactNode | React.ReactNode[];
+  let secondBlock: React.ReactNode | React.ReactNode[];
+
+  if (collectedPaidAndPending) {
+    if (type === 'total') {
+      const collectedFormatted = `$${formatAmount(collectedPaidAndPending.collected / 100)}`;
+      const collectedInt = collectedFormatted.replace(/\.\d{2}/, '');
+      const collectedFloat = collectedFormatted.match(/\.\d{2}/)?.[0] || '';
+
+      firstBlock = (
+        <>
+          {collectedInt}
+          <span className="text-[22px] 2xl:text-[24px] text-grey-400">
+            {collectedFloat}
+          </span>
+        </>
+      );
+
+      const paidFormatted = `$${formatAmount(collectedPaidAndPending.paid / 100)}`;
+      const paidInt = paidFormatted.replace(/\.\d{2}/, '');
+      const paidFloat = paidFormatted.match(/\.\d{2}/)?.[0] || '';
+
+      secondBlock = (
+        <>
+          {paidInt}
+          <span className="text-[22px] 2xl:text-[24px] text-grey-400">
+            {paidFloat}
+          </span>
+        </>
+      );
+    } else {
+      firstBlock = collectedPaidAndPending.amount;
+
+      const pendingSumFormatted = `$${formatAmount(collectedPaidAndPending.sum / 100)}`;
+      const pendingSumInt = pendingSumFormatted.replace(/\.\d{2}/, '');
+      const pendingSumFloat = pendingSumFormatted.match(/\.\d{2}/)?.[0] || '';
+
+      secondBlock = (
+        <>
+          {pendingSumInt}
+          <span className="text-[22px] 2xl:text-[24px] text-grey-400">
+            {pendingSumFloat}
+          </span>
+        </>
+      );
+    }
   }
 
   let className = `w-full min-[700px]:w-[80%] min-[1080px]:w-full grid grid-cols-[1fr] grid-rows-[1fr_1px_1fr] 
@@ -49,10 +129,7 @@ export default function DashboardStats({ type, isTop }: StatsProps) {
             {firstTitle}
           </p>
           <p className="font-tthoves text-darkBlue text-[30px] 2xl:text-[32px] font-medium [word-break:break-word]">
-            $58,764
-            <span className="text-[22px] 2xl:text-[24px] text-grey-400">
-              .25
-            </span>
+            {firstBlock}
           </p>
         </div>
       </div>
@@ -64,10 +141,7 @@ export default function DashboardStats({ type, isTop }: StatsProps) {
             {secondTitle}
           </p>
           <p className="font-tthoves text-darkBlue text-[30px] 2xl:text-[32px] font-medium [word-break:break-word]">
-            $58,764
-            <span className="text-[22px] 2xl:text-[24px] text-grey-400">
-              .25
-            </span>
+            {secondBlock}
           </p>
         </div>
       </div>

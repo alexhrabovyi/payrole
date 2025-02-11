@@ -10,8 +10,6 @@ import mockedPaymentStats from './paymentStats.mock.json';
 import FullScreenOnIcon from './images/on_fullscreen_icon.svg';
 import FullScreenOffIcon from './images/off_fullscreen_icon.svg';
 
-import '@/server/utils';
-
 export type ActiveDateRange = '1M' | '3M' | '6M' | '1Y';
 
 type CompareText = 'vs last month' | 'vs last 3 months' | 'vs last 6 months' | 'vs last year';
